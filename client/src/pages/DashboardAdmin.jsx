@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import SummaryCards from "../components/SummaryCards";
 import ReservationsTable from "../components/ReservationsTable";
@@ -6,9 +8,7 @@ import EventsTable from "../components/EventsTable";
 import TalentsTable from "../components/TalentsTable";
 import ReportsChart from "../components/ReportsChart";
 import api from "../api";
-import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
-import { CalendarIcon, UsersIcon, ChartBarIcon, ClipboardIcon, ShareIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 
 export default function DashboardAdmin() {
   const [stats, setStats] = useState([
@@ -17,52 +17,39 @@ export default function DashboardAdmin() {
     { label: "Talents", value: 0 },
     { label: "Rapports", value: 0 },
   ]);
-  
+
   const [activeTab, setActiveTab] = useState("overview");
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [reservations, setReservations] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [talents, setTalents] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
-  // Function to handle logout
-  const handleLogout = () => {
-    Cookies.remove("jwt");
-    Cookies.remove("userEmail");
-    Cookies.remove("userRole");
-    localStorage.removeItem("token");
-    navigate("/");
-  };
 
   // Fetch dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        // Fetch stats
-        const statsResponse = await api.get('/dashboard/stats');
+        // Try to fetch stats from your API
+        // If this endpoint doesn't exist yet, it will fall back to mock data
+        const statsResponse = await api.get("/dashboard/stats");
         if (statsResponse.data) {
           setStats([
-            { label: "Réservations", value: statsResponse.data.reservations || 0 },
+            {
+              label: "Réservations",
+              value: statsResponse.data.reservations || 0,
+            },
             { label: "Événements", value: statsResponse.data.events || 0 },
             { label: "Talents", value: statsResponse.data.talents || 0 },
             { label: "Rapports", value: statsResponse.data.reports || 0 },
           ]);
         }
-
-        // Fetch initial data for overview
-        const [reservationsRes, eventsRes, talentsRes] = await Promise.all([
-          api.get('/reservations?limit=5'),
-          api.get('/evenements?limit=5'),
-          api.get('/utilisateurs?is_talent=true&limit=5')
-        ]);
-
-        setReservations(reservationsRes.data || []);
-        setEvents(eventsRes.data || []);
-        setTalents(talentsRes.data || []);
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+        console.error("Error fetching dashboard data:", error);
+        // Use mock data for development
+        setStats([
+          { label: "Réservations", value: 24 },
+          { label: "Événements", value: 12 },
+          { label: "Talents", value: 8 },
+          { label: "Rapports", value: 5 },
+        ]);
       } finally {
         setLoading(false);
       }
@@ -71,41 +58,9 @@ export default function DashboardAdmin() {
     fetchDashboardData();
   }, []);
 
-  // Closing profile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showProfileMenu && !event.target.closest('.profile-menu-container')) {
-        setShowProfileMenu(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showProfileMenu]);
-
-  // Function to handle tab change with data fetching
-  const handleTabChange = async (tab) => {
+  // Function to handle tab change
+  const handleTabChange = (tab) => {
     setActiveTab(tab);
-    setLoading(true);
-    
-    try {
-      if (tab === "reservations") {
-        const res = await api.get('/reservations');
-        setReservations(res.data || []);
-      } else if (tab === "events") {
-        const res = await api.get('/evenements');
-        setEvents(res.data || []);
-      } else if (tab === "talents") {
-        const res = await api.get('/utilisateurs?is_talent=true');
-        setTalents(res.data || []);
-      }
-    } catch (error) {
-      console.error(`Error loading ${tab} data:`, error);
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -119,14 +74,6 @@ export default function DashboardAdmin() {
             <p className="text-[oklch(0.556_0_0)] mt-1">
               Bienvenue dans votre espace administrateur
             </p>
-          </div>
-          <div className="mt-4 md:mt-0 flex gap-2 items-center">
-            <button 
-              onClick={() => navigate("/events/new")}
-              className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
-            >
-              Nouvel événement
-            </button>
           </div>
         </div>
 
@@ -146,12 +93,122 @@ export default function DashboardAdmin() {
                     : "border-transparent text-[oklch(0.556_0_0)] hover:text-[oklch(0.3_0_0)]"
                 }`}
               >
-                <ChartBarIcon className="w-5 h-5" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
                 <span className="hidden md:inline">Vue d'ensemble</span>
               </button>
-              
-              {/* Other tab buttons */}
-              {/* ... */}
+
+              <button
+                onClick={() => handleTabChange("reservations")}
+                className={`flex items-center gap-2 px-4 py-2 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === "reservations"
+                    ? "border-[oklch(47.3%_0.137_46.201)] text-[oklch(47.3%_0.137_46.201)]"
+                    : "border-transparent text-[oklch(0.556_0_0)] hover:text-[oklch(0.3_0_0)]"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                <span className="hidden md:inline">Réservations</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange("events")}
+                className={`flex items-center gap-2 px-4 py-2 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === "events"
+                    ? "border-[oklch(47.3%_0.137_46.201)] text-[oklch(47.3%_0.137_46.201)]"
+                    : "border-transparent text-[oklch(0.556_0_0)] hover:text-[oklch(0.3_0_0)]"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                <span className="hidden md:inline">Événements</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange("talents")}
+                className={`flex items-center gap-2 px-4 py-2 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === "talents"
+                    ? "border-[oklch(47.3%_0.137_46.201)] text-[oklch(47.3%_0.137_46.201)]"
+                    : "border-transparent text-[oklch(0.556_0_0)] hover:text-[oklch(0.3_0_0)]"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                  />
+                </svg>
+                <span className="hidden md:inline">Talents</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange("reports")}
+                className={`flex items-center gap-2 px-4 py-2 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === "reports"
+                    ? "border-[oklch(47.3%_0.137_46.201)] text-[oklch(47.3%_0.137_46.201)]"
+                    : "border-transparent text-[oklch(0.556_0_0)] hover:text-[oklch(0.3_0_0)]"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <span className="hidden md:inline">Rapports</span>
+              </button>
             </div>
           </div>
 
@@ -165,84 +222,106 @@ export default function DashboardAdmin() {
               <>
                 {activeTab === "overview" && (
                   <div className="space-y-8">
-                    {/* Overview content */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                        <div className="flex justify-between items-center mb-4">
-                          <h2 className="text-lg font-semibold text-gray-900">Dernières réservations</h2>
-                          <button
-                            onClick={() => handleTabChange("reservations")}
-                            className="text-sm text-indigo-600 hover:text-indigo-800"
-                          >
-                            Voir tout
-                          </button>
-                        </div>
-                        <ReservationsTable
-                          reservations={reservations.slice(0, 5)}
-                          canDelete={false}
-                        />
+                    <div>
+                      <h2 className="text-lg font-semibold mb-4 text-[oklch(0.145_0_0)]">
+                        Aperçu des activités
+                      </h2>
+                      <ReportsChart />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
+                          Réservations récentes
+                        </h2>
+                        <button
+                          onClick={() => handleTabChange("reservations")}
+                          className="text-sm text-[oklch(47.3%_0.137_46.201)] hover:underline"
+                        >
+                          Voir tout
+                        </button>
                       </div>
-
-                      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                        <div className="flex justify-between items-center mb-4">
-                          <h2 className="text-lg font-semibold text-gray-900">Prochains événements</h2>
-                          <button
-                            onClick={() => handleTabChange("events")}
-                            className="text-sm text-indigo-600 hover:text-indigo-800"
-                          >
-                            Voir tout
-                          </button>
-                        </div>
-                        <EventsTable
-                          events={events.slice(0, 5)}
-                          canDelete={false}
-                        />
+                      <ReservationsTable limit={5} />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
+                          Événements à venir
+                        </h2>
+                        <button
+                          onClick={() => handleTabChange("events")}
+                          className="text-sm text-[oklch(47.3%_0.137_46.201)] hover:underline"
+                        >
+                          Voir tout
+                        </button>
                       </div>
+                      <EventsTable limit={5} />
                     </div>
                   </div>
                 )}
 
                 {activeTab === "reservations" && (
-                  <div className="space-y-6">
-                    <h2 className="text-lg font-semibold text-gray-900">Gestion des réservations</h2>
-                    <ReservationsTable
-                      reservations={reservations}
-                      canDelete={false}
-                    />
+                  <div>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
+                        Gestion des réservations
+                      </h2>
+                    </div>
+                    <ReservationsTable />
                   </div>
                 )}
 
                 {activeTab === "events" && (
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                      <h2 className="text-lg font-semibold text-gray-900">Gestion des événements</h2>
-                      <button
-                        onClick={() => navigate("/events/new")}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-                      >
-                        Nouvel événement
-                      </button>
+                  <div>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
+                        Gestion des événements
+                      </h2>
                     </div>
-                    <EventsTable
-                      events={events}
-                      canDelete={false}
-                    />
+                    <EventsTable />
                   </div>
                 )}
 
                 {activeTab === "talents" && (
-                  <div className="space-y-6">
-                    <h2 className="text-lg font-semibold text-gray-900">Gestion des talents</h2>
-                    <TalentsTable
-                      talents={talents}
-                      canDelete={false}
-                    />
+                  <div>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
+                        Gestion des talents
+                      </h2>
+                      <button
+                        onClick={() => navigate("/talents/new")}
+                        className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
+                      >
+                        Ajouter un talent
+                      </button>
+                    </div>
+                    <TalentsTable />
                   </div>
                 )}
 
                 {activeTab === "reports" && (
-                  <div className="space-y-6">
-                    <h2 className="text-lg font-semibold text-gray-900">Rapports</h2>
+                  <div>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
+                        Rapports et statistiques
+                      </h2>
+                      <button className="px-4 py-2 bg-gray-200 text-[oklch(0.145_0_0)] rounded-lg shadow hover:bg-gray-300 transition-colors flex items-center gap-1">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                          />
+                        </svg>
+                        Exporter
+                      </button>
+                    </div>
                     <ReportsChart />
                   </div>
                 )}
