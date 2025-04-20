@@ -54,10 +54,15 @@ export const updateEvenement = async (req, res) => {
 export const deleteEvenement = async (req, res) => {
   try {
     const { id } = req.params;
-    await Evenement.destroy({ where: { id } });
-    res.json({ message: "Evenement deleted" });
+    const event = await Evenement.findByPk(id);
+    if (!event) {
+      return res.status(404).json({ message: "Événement non trouvé" });
+    }
+    await event.destroy();
+    res.json({ message: "Événement supprimé avec succès" });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("Erreur lors de la suppression de l'événement:", err);
+    res.status(500).json({ message: "Erreur lors de la suppression de l'événement", error: err.message });
   }
 };
 

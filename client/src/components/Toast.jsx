@@ -5,15 +5,22 @@ import { useEffect, useState } from "react";
 export default function Toast({ message, type = "success", onClose }) {
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
+  const [bounce, setBounce] = useState(false);
 
   useEffect(() => {
     // Trigger entrance animation
     setTimeout(() => setVisible(true), 10);
+    
+    // Add a small bounce effect after appearing
+    setTimeout(() => {
+      setBounce(true);
+      setTimeout(() => setBounce(false), 300);
+    }, 400);
 
     // Set timer for auto-close
     const timer = setTimeout(() => {
       handleClose();
-    }, 3000);
+    }, 5000); // Extended time to 5 seconds
 
     return () => clearTimeout(timer);
   }, []);
@@ -23,7 +30,13 @@ export default function Toast({ message, type = "success", onClose }) {
     setTimeout(() => {
       setVisible(false);
       onClose();
-    }, 300); // Match this with the CSS transition duration
+    }, 300); // Extended for smoother exit animation
+  };
+
+  // Pulse animation when hovering over the toast
+  const handleMouseEnter = () => {
+    setBounce(true);
+    setTimeout(() => setBounce(false), 400);
   };
 
   const bgColor = {
@@ -33,14 +46,19 @@ export default function Toast({ message, type = "success", onClose }) {
     info: "bg-blue-500",
   }[type];
 
+  const iconAnimation = bounce ? "animate-pulse" : "";
+
   return (
     <div
-      className={`fixed top-4 right-4 z-50 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center transition-all duration-300 ease-in-out ${
+      className={`fixed top-4 right-4 z-50 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center transition-all duration-500 ease-in-out ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-[-20px]"
-      } ${exiting ? "opacity-0 translate-y-[-20px]" : ""}`}
+      } ${exiting ? "opacity-0 translate-y-[-20px] rotate-1" : ""} ${
+        bounce ? "scale-105" : "scale-100"
+      } hover:shadow-xl`}
+      onMouseEnter={handleMouseEnter}
     >
-      {/* Icon based on type */}
-      <span className="mr-2">
+      {/* Icon based on type with animation */}
+      <span className={`mr-2 transition-transform ${iconAnimation}`}>
         {type === "success" && (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -98,10 +116,27 @@ export default function Toast({ message, type = "success", onClose }) {
           </svg>
         )}
       </span>
-      <span>{message}</span>
+      
+      {/* Message with fade-in effect */}
+      <span className={`transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}>
+        {message}
+      </span>
+      
+      {/* Progress bar at the bottom */}
+      <div className="absolute bottom-0 left-0 h-1 bg-white bg-opacity-30 w-full rounded-b-lg overflow-hidden">
+        <div 
+          className="h-full bg-white bg-opacity-60 rounded-bl-lg" 
+          style={{ 
+            width: '100%', 
+            animation: visible ? 'progress 5s linear forwards' : 'none'
+          }}
+        />
+      </div>
+      
+      {/* Close button with hover effect */}
       <button
         onClick={handleClose}
-        className="ml-auto text-white hover:text-gray-200 focus:outline-none"
+        className="ml-auto text-white hover:text-gray-200 focus:outline-none transition-transform duration-200 hover:rotate-90"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -116,6 +151,13 @@ export default function Toast({ message, type = "success", onClose }) {
           />
         </svg>
       </button>
+      
+      <style jsx global>{`
+        @keyframes progress {
+          0% { width: 100%; }
+          100% { width: 0%; }
+        }
+      `}</style>
     </div>
   );
 }
