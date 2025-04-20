@@ -6,6 +6,8 @@ import api from "../api";
 import Cookies from "js-cookie";
 import TalentForm from "./TalentForm";
 import TalentDetails from "./TalentDetails";
+import Toast from "./Toast";
+
 
 export default function TalentsTable({ limit }) {
   const [talents, setTalents] = useState([]);
@@ -21,6 +23,7 @@ export default function TalentsTable({ limit }) {
   const [viewingTalentId, setViewingTalentId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [toast, setToast] = useState(null); 
   const userRole = Cookies.get("userRole");
   const canDelete = userRole === "superadmin";
 
@@ -40,9 +43,19 @@ export default function TalentsTable({ limit }) {
 
       setTalents(data);
       setError(null);
+      // Ajout du toast pour indiquer le succès du chargement
+      setToast({
+        message: "Talents chargés avec succès",
+        type: "success",
+      });
     } catch (err) {
       console.error("Error fetching talents:", err);
       setError("Impossible de charger les talents");
+      // Ajout du toast pour indiquer l'erreur
+      setToast({
+        message: "Erreur lors du chargement des talents",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -58,9 +71,19 @@ export default function TalentsTable({ limit }) {
       await api.delete(`/utilisateurs/${selectedId}`);
       setTalents(talents.filter((talent) => talent.id !== selectedId));
       setShowConfirmModal(false);
+      // Ajout du toast pour indiquer le succès de la suppression
+      setToast({
+        message: "Talent supprimé avec succès",
+        type: "success",
+      });
     } catch (error) {
       console.error("Error deleting talent:", error);
       setError("Erreur lors de la suppression du talent");
+      // Ajout du toast pour indiquer l'erreur lors de la suppression
+      setToast({
+        message: "Erreur lors de la suppression",
+        type: "error",
+      });
     }
   };
 
@@ -81,6 +104,11 @@ export default function TalentsTable({ limit }) {
 
   const handleTalentFormSuccess = () => {
     fetchTalents();
+    // Ajout du toast pour indiquer le succès de l'ajout/modification
+    setToast({
+      message: editingTalentId ? "Talent modifié avec succès" : "Talent ajouté avec succès",
+      type: "success",
+    });
     setCurrentPage(1); // Reset to first page after adding/editing
   };
 
@@ -252,8 +280,7 @@ export default function TalentsTable({ limit }) {
           </div>
 
           {/* Pagination */}
-          {/* Pagination */}
-          {filteredTalents.length > 0 && (
+          {filteredTalents.length > itemsPerPage && (
             <div className="flex items-center justify-between mt-4">
               {/* Affichage du texte indiquant la plage d'éléments affichés */}
               <div className="text-sm text-gray-500 ">
@@ -370,6 +397,9 @@ export default function TalentsTable({ limit }) {
         talentId={viewingTalentId}
         onEdit={handleEditTalent}
       />
+
+      {/* Ajout du composant Toast */}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </>
   );
 }

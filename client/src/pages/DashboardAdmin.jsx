@@ -360,12 +360,6 @@ export default function DashboardAdmin() {
                       <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
                         Gestion des événements
                       </h2>
-                      <button
-                        onClick={() => navigate("/events/new")}
-                        className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
-                      >
-                        Nouvel événement
-                      </button>
                     </div>
                     <EventsTable />
                   </div>
@@ -377,12 +371,7 @@ export default function DashboardAdmin() {
                       <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
                         Gestion des talents
                       </h2>
-                      <button
-                        onClick={() => navigate("/talents/new")}
-                        className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
-                      >
-                        Ajouter un talent
-                      </button>
+                     
                     </div>
                     <TalentsTable />
                   </div>
@@ -394,12 +383,7 @@ export default function DashboardAdmin() {
                       <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
                         Gestion des utilisateurs
                       </h2>
-                      <button
-                        onClick={() => navigate("/users/new")}
-                        className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
-                      >
-                        Ajouter un utilisateur
-                      </button>
+                     
                     </div>
                     <UsersTable />
                   </div>
@@ -411,12 +395,7 @@ export default function DashboardAdmin() {
                       <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
                         Gestion des espaces
                       </h2>
-                      <button
-                        onClick={() => navigate("/espaces/new")}
-                        className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
-                      >
-                        Ajouter un espace
-                      </button>
+                      
                     </div>
                     <EspacesTable />
                   </div>
@@ -454,7 +433,13 @@ export default function DashboardAdmin() {
           </div>
         </div>
       </div>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </DashboardLayout>
   );
 }

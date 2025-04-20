@@ -61,14 +61,7 @@ export default function DashboardSuperAdmin() {
             <h1 className="text-2xl md:text-3xl font-bold text-[oklch(0.145_0_0)]">Administration Centrale</h1>
             <p className="text-[oklch(0.556_0_0)] mt-1">Bienvenue dans votre espace super administrateur</p>
           </div>
-          <div className="mt-4 md:mt-0 flex gap-2">
-            <button
-              onClick={() => navigate("/events/new")}
-              className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
-            >
-              Nouvel événement
-            </button>
-          </div>
+          
         </div>
 
         {/* Summary Cards */}
@@ -291,12 +284,7 @@ export default function DashboardSuperAdmin() {
                   <div>
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">Gestion des événements</h2>
-                      <button
-                        onClick={() => navigate("/events/new")}
-                        className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
-                      >
-                        Nouvel événement
-                      </button>
+                      
                     </div>
                     <EventsTable />
                   </div>
@@ -306,12 +294,7 @@ export default function DashboardSuperAdmin() {
                   <div>
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">Gestion des talents</h2>
-                      <button
-                        onClick={() => navigate("/talents/new")}
-                        className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
-                      >
-                        Ajouter un talent
-                      </button>
+                     
                     </div>
                     <TalentsTable />
                   </div>
