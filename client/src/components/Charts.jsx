@@ -1,27 +1,35 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import api from "../api"
 import { jsPDF } from "jspdf"
 import html2canvas from "html2canvas"
+import Chart from "chart.js/auto"
 
-export default function ReportsChart() {
+export default function Charts() {
   const [reportData, setReportData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [timeframe, setTimeframe] = useState("month")
+  const [chartType, setChartType] = useState("bar")
   const [exporting, setExporting] = useState(false)
   const chartRef = useRef(null)
+  const chartInstance = useRef(null)
 
   useEffect(() => {
     fetchReports()
   }, [timeframe])
 
-  // Update the fetchReports function to handle API errors better
+  useEffect(() => {
+    if (reportData.length > 0) {
+      renderChart()
+    }
+  }, [reportData, chartType])
+
   const fetchReports = async () => {
     setLoading(true)
     try {
-      // Try to fetch reports data
+      // Essayer de récupérer les données réelles
       const response = await api.get(`/reports?timeframe=${timeframe}`)
       setReportData(response.data)
       setError(null)
@@ -29,7 +37,7 @@ export default function ReportsChart() {
       console.error("Error fetching reports:", error)
       setError("Impossible de charger les données des rapports")
 
-      // Always use mock data for now
+      // Utiliser des données fictives pour le développement
       if (timeframe === "month") {
         setReportData([
           { label: "Janvier", value: 12 },
@@ -58,16 +66,85 @@ export default function ReportsChart() {
     }
   }
 
-  // Calculate total activities
+  const renderChart = () => {
+    const ctx = document.getElementById("reportChart")
+    
+    // Détruire le graphique existant s'il y en a un
+    if (chartInstance.current) {
+      chartInstance.current.destroy()
+    }
+    
+    // Préparer les données pour Chart.js
+    const labels = reportData.map(item => item.label)
+    const values = reportData.map(item => item.value)
+    
+    // Configurer les couleurs
+    const backgroundColors = [
+      'rgba(139, 68, 37, 0.7)',
+      'rgba(205, 133, 63, 0.7)',
+      'rgba(210, 105, 30, 0.7)',
+      'rgba(160, 82, 45, 0.7)',
+      'rgba(165, 42, 42, 0.7)',
+      'rgba(178, 34, 34, 0.7)',
+    ]
+    
+    // Créer le graphique
+    chartInstance.current = new Chart(ctx, {
+      type: chartType,
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Nombre d\'activités',
+          data: values,
+          backgroundColor: chartType === 'line' 
+            ? 'rgba(139, 68, 37, 0.2)' 
+            : backgroundColors,
+          borderColor: chartType === 'line' 
+            ? 'rgba(139, 68, 37, 1)' 
+            : backgroundColors.map(color => color.replace('0.7', '1')),
+          borderWidth: 1,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: chartType !== 'bar',
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: `Rapport d'activités - ${getTimeframeLabel()}`,
+            font: {
+              size: 16
+            }
+          }
+        },
+        scales: chartType !== 'pie' && chartType !== 'doughnut' ? {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Nombre d\'activités'
+            }
+          }
+        } : undefined
+      }
+    })
+  }
+
+  // Calculer le total des activités
   const totalActivities = reportData.reduce((sum, item) => sum + item.value, 0)
 
-  // Find most active month
+  // Trouver le mois le plus actif
   const mostActiveMonth =
     reportData.length > 0
       ? reportData.reduce((max, item) => (item.value > max.value ? item : max), reportData[0]).label
       : "N/A"
 
-  // Calculate monthly average
+  // Calculer la moyenne mensuelle
   const monthlyAverage = reportData.length > 0 ? Math.round(totalActivities / reportData.length) : 0
 
   const exportToPDF = async () => {
@@ -82,13 +159,13 @@ export default function ReportsChart() {
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
       
-      // Add title
+      // Ajouter un titre
       pdf.setFontSize(18)
       pdf.setTextColor(40, 40, 40)
       const title = `Rapport d'activités - ${getTimeframeLabel()}`
       pdf.text(title, pdfWidth/2, 20, { align: 'center' })
       
-      // Add date
+      // Ajouter la date
       pdf.setFontSize(12)
       pdf.setTextColor(100, 100, 100)
       const date = new Date().toLocaleDateString('fr-FR', {
@@ -98,12 +175,12 @@ export default function ReportsChart() {
       })
       pdf.text(`Généré le ${date}`, pdfWidth/2, 30, { align: 'center' })
       
-      // Add chart image
+      // Ajouter l'image du graphique
       const imgWidth = pdfWidth - 40
       const imgHeight = (canvas.height * imgWidth) / canvas.width
       pdf.addImage(imgData, 'PNG', 20, 40, imgWidth, imgHeight)
       
-      // Add summary statistics
+      // Ajouter les statistiques récapitulatives
       pdf.setFontSize(14)
       pdf.setTextColor(40, 40, 40)
       pdf.text('Résumé des statistiques', 20, imgHeight + 50)
@@ -113,7 +190,7 @@ export default function ReportsChart() {
       pdf.text(`${timeframe === 'month' ? 'Mois' : timeframe === 'quarter' ? 'Trimestre' : 'Année'} le plus actif: ${mostActiveMonth}`, 20, imgHeight + 70)
       pdf.text(`Moyenne ${timeframe === 'month' ? 'mensuelle' : timeframe === 'quarter' ? 'trimestrielle' : 'annuelle'}: ${monthlyAverage}`, 20, imgHeight + 80)
       
-      // Save the PDF
+      // Enregistrer le PDF
       pdf.save(`rapport-activites-${timeframe}-${date}.pdf`)
     } catch (error) {
       console.error('Error exporting to PDF:', error)
@@ -157,6 +234,18 @@ export default function ReportsChart() {
             <option value="quarter">Ce trimestre</option>
             <option value="year">Cette année</option>
           </select>
+          
+          <select
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
+            value={chartType}
+            onChange={(e) => setChartType(e.target.value)}
+          >
+            <option value="bar">Graphique à barres</option>
+            <option value="line">Graphique linéaire</option>
+            <option value="pie">Graphique circulaire</option>
+            <option value="doughnut">Graphique en anneau</option>
+          </select>
+          
           <button
             onClick={exportToPDF}
             disabled={exporting}
@@ -193,30 +282,12 @@ export default function ReportsChart() {
         </div>
       </div>
 
-      {/* Chart visualization */}
+      {/* Zone du graphique */}
       <div className="h-64 mb-6">
-        <div className="flex h-full items-end">
-          {reportData.map((item, index) => {
-            // Calculate height percentage based on the highest value
-            const maxValue = Math.max(...reportData.map((d) => d.value))
-            const heightPercentage = (item.value / maxValue) * 100
-
-            return (
-              <div key={index} className="flex-1 flex flex-col items-center">
-                <div
-                  className="w-full max-w-[40px] bg-[oklch(47.3%_0.137_46.201)] rounded-t-md mx-1 flex items-end justify-center"
-                  style={{ height: `${heightPercentage}%` }}
-                >
-                  <div className="text-white text-xs font-medium py-1">{item.value}</div>
-                </div>
-                <div className="text-xs text-gray-500 mt-2">{item.label}</div>
-              </div>
-            )
-          })}
-        </div>
+        <canvas id="reportChart" width="400" height="200"></canvas>
       </div>
 
-      {/* Summary statistics */}
+      {/* Statistiques récapitulatives */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-indigo-50 p-4 rounded-lg">
           <h4 className="font-medium text-indigo-800">Total des activités</h4>

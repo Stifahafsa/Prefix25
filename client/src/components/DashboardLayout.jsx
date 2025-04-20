@@ -1,55 +1,68 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import Sidebar from "./Sidebar"
-import Toast from "./Toast"
-import Cookies from "js-cookie"
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Sidebar from "./Sidebar";
+import Cookies from "js-cookie";
 
 export default function DashboardLayout({ children }) {
-  const [userEmail, setUserEmail] = useState("")
-  const [userRole, setUserRole] = useState("")
-  const [toast, setToast] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [navigate] = useState(useNavigate())
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [userName, setUserName] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const email = Cookies.get("userEmail")
-    const role = Cookies.get("userRole")
-    const token = Cookies.get("jwt")
-
+    // Vérifier si l'utilisateur est connecté
+    const token = Cookies.get("jwt");
     if (!token) {
-      navigate("/login")
-      return
+      navigate("/login");
+    } else {
+      // Récupérer le nom d'utilisateur
+      const name = Cookies.get("userEmail");
+      setUserName(name || "Utilisateur");
     }
+  }, [navigate]);
 
-    setUserEmail(email || "")
-    setUserRole(role || "")
-
-    // Skip token verification for now and just set loading to false
-    // This allows us to use the dashboard with mock data
-    setLoading(false)
-  }, [navigate])
-
-  const showToast = (message, type = "success") => {
-    setToast({ message, type })
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[oklch(47.3%_0.137_46.201)]"></div>
-      </div>
-    )
-  }
+  const handleLogout = () => {
+    Cookies.remove("jwt");
+    Cookies.remove("userRole");
+    Cookies.remove("userName");
+    Cookies.remove("userId");
+    navigate("/login");
+  };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar userEmail={userEmail} role={userRole} />
-      <main className="flex-1 p-8 ml-20 md:ml-64 transition-all duration-300 ease-in-out">
-        {children}
-        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      </main>
+    <div className="min-h-screen bg-[oklch(0.97_0_0)]">
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+
+      <div className="md:ml-64 transition-all duration-300">
+        {/* Header */}
+        <header className="bg-white border-b border-[oklch(0.922_0_0)] h-16 flex items-center px-2 sticky top-0 z-10">
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="md:hidden text-[oklch(0.3_0_0)] hover:text-[oklch(0.145_0_0)] mr-4"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+
+          
+        </header>
+
+        {/* Main content */}
+        <main className="p-4 md:p-6">{children}</main>
+      </div>
     </div>
-  )
+  );
 }

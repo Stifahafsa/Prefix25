@@ -5,24 +5,14 @@ import DashboardSuperAdmin from "./pages/DashboardSuperAdmin"
 import ReservationsPage from "./pages/ReservationsPage"
 import EventsPage from "./pages/EventsPage"
 import TalentsPage from "./pages/TalentsPage"
+import UsersPage from "./pages/UsersPage"
+import EspacesPage from "./pages/EspacesPage"
+import CommentairesPage from "./pages/CommentairesPage"
 import ReportsPage from "./pages/ReportsPage"
 import SocialPage from "./pages/SocialPage"
 import ConfigPage from "./pages/ConfigPage"
 import Cookies from "js-cookie"
-
-// Protected route component
-const ProtectedRoute = ({ element, requiredRole }) => {
-  const token = Cookies.get("jwt")
-  const userRole = Cookies.get("userRole")
-
-  // Always allow access during development if there's any token
-  if (!token) {
-    return <Navigate to="/login" replace />
-  }
-
-  // Skip role checking during development
-  return element
-}
+import ProtectedRoute from "./components/ProtectedRoute"
 
 function App() {
   return (
@@ -33,37 +23,44 @@ function App() {
         <Route path="/" element={<Navigate to="/dashboard/admin" replace />} />
 
         {/* Admin routes */}
-        <Route path="/dashboard/admin" element={<ProtectedRoute element={<DashboardAdmin />} requiredRole="admin" />} />
-        <Route
-          path="/dashboard/reservations"
-          element={<ProtectedRoute element={<ReservationsPage />} requiredRole="admin" />}
-        />
-        <Route path="/dashboard/events" element={<ProtectedRoute element={<EventsPage />} requiredRole="admin" />} />
-        <Route path="/dashboard/talents" element={<ProtectedRoute element={<TalentsPage />} requiredRole="admin" />} />
-        <Route path="/dashboard/reports" element={<ProtectedRoute element={<ReportsPage />} requiredRole="admin" />} />
-        <Route path="/dashboard/social" element={<ProtectedRoute element={<SocialPage />} requiredRole="admin" />} />
+        <Route path="/dashboard/admin" element={<ProtectedRoute><DashboardAdmin /></ProtectedRoute>} />
+        <Route path="/dashboard/reservations" element={<ProtectedRoute><ReservationsPage /></ProtectedRoute>} />
+        <Route path="/dashboard/events" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
+        <Route path="/dashboard/talents" element={<ProtectedRoute><TalentsPage /></ProtectedRoute>} />
+        <Route path="/dashboard/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
+        <Route path="/dashboard/espaces" element={<ProtectedRoute><EspacesPage /></ProtectedRoute>} />
+        <Route path="/dashboard/commentaires" element={<ProtectedRoute><CommentairesPage /></ProtectedRoute>} />
+        <Route path="/dashboard/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
+        <Route path="/dashboard/social" element={<ProtectedRoute><SocialPage /></ProtectedRoute>} />
 
         {/* SuperAdmin routes */}
-        <Route
-          path="/dashboard/superadmin"
-          element={<ProtectedRoute element={<DashboardSuperAdmin />} requiredRole="superadmin" />}
-        />
-        <Route
-          path="/dashboard/config"
-          element={<ProtectedRoute element={<ConfigPage />} requiredRole="superadmin" />}
-        />
+        <Route path="/dashboard/superadmin" element={<ProtectedRoute><DashboardSuperAdmin /></ProtectedRoute>} />
+        <Route path="/dashboard/config" element={<ProtectedRoute><ConfigPage /></ProtectedRoute>} />
 
-        {/* Event and talent detail routes */}
-        <Route path="/events/:id" element={<ProtectedRoute element={<EventsPage />} requiredRole="admin" />} />
-        <Route path="/events/:id/edit" element={<ProtectedRoute element={<EventsPage />} requiredRole="admin" />} />
-        <Route path="/events/new" element={<ProtectedRoute element={<EventsPage />} requiredRole="admin" />} />
-        <Route path="/talents/:id" element={<ProtectedRoute element={<TalentsPage />} requiredRole="admin" />} />
-        <Route path="/talents/:id/edit" element={<ProtectedRoute element={<TalentsPage />} requiredRole="admin" />} />
-        <Route path="/talents/new" element={<ProtectedRoute element={<TalentsPage />} requiredRole="admin" />} />
-        <Route
-          path="/reservations/:id"
-          element={<ProtectedRoute element={<ReservationsPage />} requiredRole="admin" />}
-        />
+        {/* Detail routes */}
+        <Route path="/events/:id" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
+        <Route path="/events/:id/edit" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
+        <Route path="/events/new" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
+        
+        <Route path="/talents/:id" element={<ProtectedRoute><TalentsPage /></ProtectedRoute>} />
+        <Route path="/talents/:id/edit" element={<ProtectedRoute><TalentsPage /></ProtectedRoute>} />
+        <Route path="/talents/new" element={<ProtectedRoute><TalentsPage /></ProtectedRoute>} />
+        
+        <Route path="/users/:id" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
+        <Route path="/users/:id/edit" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
+        <Route path="/users/new" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
+        
+        <Route path="/espaces/:id" element={<ProtectedRoute><EspacesPage /></ProtectedRoute>} />
+        <Route path="/espaces/:id/edit" element={<ProtectedRoute><EspacesPage /></ProtectedRoute>} />
+        <Route path="/espaces/new" element={<ProtectedRoute><EspacesPage /></ProtectedRoute>} />
+        
+        <Route path="/commentaires/:id" element={<ProtectedRoute><CommentairesPage /></ProtectedRoute>} />
+        <Route path="/commentaires/:id/edit" element={<ProtectedRoute><CommentairesPage /></ProtectedRoute>} />
+        <Route path="/commentaires/new" element={<ProtectedRoute><CommentairesPage /></ProtectedRoute>} />
+        
+        <Route path="/reservations/:id" element={<ProtectedRoute><ReservationsPage /></ProtectedRoute>} />
+        <Route path="/reservations/:id/edit" element={<ProtectedRoute><ReservationsPage /></ProtectedRoute>} />
+        <Route path="/reservations/new" element={<ProtectedRoute><ReservationsPage /></ProtectedRoute>} />
 
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/dashboard/admin" replace />} />

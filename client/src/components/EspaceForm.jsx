@@ -5,117 +5,105 @@ import Modal from "./Modal"
 import api from "../api"
 import Toast from "./Toast"
 
-export default function EventForm({ isOpen, onClose, event = null, onSuccess, spaces = [] }) {
-  // Define the function before using it
-  const formatDateForInput = (date) => {
-    return date.toISOString().slice(0, 16)
-  }
-  
+export default function EspaceForm({ isOpen, onClose, espace = null, onSuccess }) {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
   const [formData, setFormData] = useState({
-    titre: "",
-    type: "spectacle",
-    date_debut: formatDateForInput(new Date()),
-    date_fin: formatDateForInput(new Date(Date.now() + 2 * 60 * 60 * 1000)),
+    nom: "",
+    type: "salle",
+    sous_type: "",
+    capacite: "",
     description: "",
-    prix: 0,
-    espace_id: spaces[0]?.id || 1,
+    image_url: "",
   })
 
-  // Initialize form with event data if editing
+  // Initialize form with espace data if editing
   useEffect(() => {
-    if (isOpen && event) {
+    if (isOpen && espace) {
       setFormData({
-        titre: event.titre || "",
-        type: event.type || "spectacle",
-        date_debut: event.date_debut ? formatDateForInput(new Date(event.date_debut)) : formatDateForInput(new Date()),
-        date_fin: event.date_fin ? formatDateForInput(new Date(event.date_fin)) : formatDateForInput(new Date(Date.now() + 2 * 60 * 60 * 1000)),
-        description: event.description || "",
-        prix: event.prix || 0,
-        espace_id: event.espace_id || (spaces[0]?.id || 1),
+        nom: espace.nom || "",
+        type: espace.type || "salle",
+        sous_type: espace.sous_type || "",
+        capacite: espace.capacite || "",
+        description: espace.description || "",
+        image_url: espace.image_url || "",
       })
     } else if (isOpen) {
-      // Reset form for new event
+      // Reset form for new espace
       setFormData({
-        titre: "",
-        type: "spectacle",
-        date_debut: formatDateForInput(new Date()),
-        date_fin: formatDateForInput(new Date(Date.now() + 2 * 60 * 60 * 1000)),
+        nom: "",
+        type: "salle",
+        sous_type: "",
+        capacite: "",
         description: "",
-        prix: 0,
-        espace_id: spaces[0]?.id || 1,
+        image_url: "",
       })
     }
-  }, [isOpen, event, spaces])
+  }, [isOpen, espace])
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "prix" ? Number.parseFloat(value) : value,
+      [name]: name === "capacite" ? (value === "" ? "" : Number.parseInt(value)) : value,
     }))
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    
+    e.preventDefault()
+    setSaving(true)
+
     try {
-      // Convertir les dates en format ISO
-      const dateDebut = new Date(formData.date_debut);
-      const dateFin = new Date(formData.date_fin);
-      
-      // Vérifier que date_fin est après date_debut
-      if (dateFin <= dateDebut) {
-        setToast({
-          message: "La date de fin doit être après la date de début",
-          type: "error",
-        });
-        setSaving(false);
-        return;
-      }
-      
-      const payload = {
-        ...formData,
-        date_debut: dateDebut.toISOString(),
-        date_fin: dateFin.toISOString(),
-        createur_id: 1, // À remplacer par l'ID de l'utilisateur connecté
-      };
+      const payload = { ...formData }
 
-      if (event?.id) {
-        // Update existing event
-        await api.put(`/evenements/${event.id}`, payload);
+      if (espace?.id) {
+        // Update existing espace
+        await api.put(`/espaces/${espace.id}`, payload)
         setToast({
-          message: "Événement mis à jour avec succès",
+          message: "Espace mis à jour avec succès",
           type: "success",
-        });
+        })
       } else {
-        // Create new event
-        await api.post("/evenements", payload);
+        // Create new espace
+        await api.post("/espaces", payload)
         setToast({
-          message: "Événement créé avec succès",
+          message: "Espace créé avec succès",
           type: "success",
-        });
+        })
       }
 
-      // Call success callback
-      if (onSuccess) onSuccess();
-
-      // Close modal after a short delay
-      setTimeout(() => {
-        onClose();
-      }, 1500);
+      if (onSuccess) onSuccess()
+      setTimeout(() => onClose(), 1500)
     } catch (error) {
-      console.error("Error saving event:", error);
+      console.error("Error saving espace:", error)
       setToast({
         message: error.response?.data?.message || "Erreur lors de l'enregistrement",
         type: "error",
-      });
+      })
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
+  }
+
+  const getSousTypeOptions = () => {
+    if (formData.type === "salle") {
+      return [
+        { value: "théâtre", label: "Théâtre" },
+        { value: "conférence", label: "Conférence" },
+        { value: "bibliothèque", label: "Bibliothèque" },
+        { value: "musique", label: "Musique" },
+        { value: "café", label: "Café" },
+      ]
+    } else if (formData.type === "atelier") {
+      return [
+        { value: "photographie", label: "Photographie" },
+        { value: "informatique", label: "Informatique" },
+        { value: "langue", label: "Langue" },
+        { value: "arts", label: "Arts" },
+      ]
+    }
+    return []
   }
 
   return (
@@ -123,7 +111,7 @@ export default function EventForm({ isOpen, onClose, event = null, onSuccess, sp
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={event?.id ? "Modifier l'événement" : "Nouvel événement"}
+        title={espace?.id ? "Modifier l'espace" : "Nouvel espace"}
         footer={
           <>
             <button
@@ -176,11 +164,11 @@ export default function EventForm({ isOpen, onClose, event = null, onSuccess, sp
         ) : (
           <form className="space-y-4">
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Titre</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">Nom</label>
               <input
                 type="text"
-                name="titre"
-                value={formData.titre}
+                name="nom"
+                value={formData.nom}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
                 required
@@ -195,64 +183,36 @@ export default function EventForm({ isOpen, onClose, event = null, onSuccess, sp
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
               >
-                <option value="spectacle">Spectacle</option>
+                <option value="salle">Salle</option>
                 <option value="atelier">Atelier</option>
-                <option value="conference">Conférence</option>
-                <option value="exposition">Exposition</option>
-                <option value="rencontre">Rencontre</option>
               </select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">Date de début</label>
-                <input
-                  type="datetime-local"
-                  name="date_debut"
-                  value={formData.date_debut}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">Date de fin</label>
-                <input
-                  type="datetime-local"
-                  name="date_fin"
-                  value={formData.date_fin}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
-                  required
-                />
-              </div>
-            </div>
-
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Espace</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">Sous-type</label>
               <select
-                name="espace_id"
-                value={formData.espace_id}
+                name="sous_type"
+                value={formData.sous_type}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
               >
-                {spaces.map((space) => (
-                  <option key={space.id} value={space.id}>
-                    {space.nom}
+                <option value="">Sélectionner un sous-type</option>
+                {getSousTypeOptions().map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Prix (MAD)</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">Capacité</label>
               <input
                 type="number"
-                name="prix"
-                value={formData.prix}
+                name="capacite"
+                value={formData.capacite}
                 onChange={handleChange}
-                min="0"
-                step="0.01"
+                min="1"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
               />
             </div>
@@ -266,6 +226,17 @@ export default function EventForm({ isOpen, onClose, event = null, onSuccess, sp
                 rows="4"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
               ></textarea>
+            </div>
+
+            <div>
+              <label className="block mb-2 text-sm font-medium text-gray-700">URL de l'image</label>
+              <input
+                type="text"
+                name="image_url"
+                value={formData.image_url}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
+              />
             </div>
           </form>
         )}

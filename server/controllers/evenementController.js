@@ -9,12 +9,35 @@ export const getEvenements = async (req, res) => {
   }
 };
 
+// evenementController.js
 export const createEvenement = async (req, res) => {
   try {
+    // Vérifier que les champs obligatoires sont présents
+    if (
+      !req.body.titre ||
+      !req.body.date_debut ||
+      !req.body.date_fin ||
+      !req.body.espace_id ||
+      !req.body.type
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Tous les champs obligatoires doivent être remplis" });
+    }
+
+    // Vérifier que createur_id est présent (si nécessaire)
+    if (!req.body.createur_id) {
+      return res.status(400).json({ message: "Createur ID est requis" });
+    }
+
     const evenement = await Evenement.create(req.body);
     res.status(201).json(evenement);
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("Error creating event:", err);
+    res.status(500).json({
+      message: "Erreur serveur",
+      error: err.message, // Ajouter ceci pour le débogage
+    });
   }
 };
 

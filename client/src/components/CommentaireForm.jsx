@@ -5,98 +5,78 @@ import Modal from "./Modal"
 import api from "../api"
 import Toast from "./Toast"
 
-export default function TalentForm({ isOpen, onClose, talentId = null, onSuccess }) {
+export default function CommentaireForm({ isOpen, onClose, commentaire = null, onSuccess, events = [], users = [], evenementId = null }) {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
-  const [talent, setTalent] = useState({
-    nom: "",
-    email: "",
-    domaine_artiste: "",
-    statut_talent: "en_validation",
-    description_talent: "",
-    is_talent: true,
+  const [formData, setFormData] = useState({
+    contenu: "",
+    utilisateur_id: "",
+    evenement_id: evenementId || "",
+    note: "",
   })
 
-  // Fetch talent data if editing
+  // Initialize form with commentaire data if editing
   useEffect(() => {
-    if (isOpen && talentId) {
-      fetchTalent()
+    if (isOpen && commentaire) {
+      setFormData({
+        contenu: commentaire.contenu || "",
+        utilisateur_id: commentaire.utilisateur_id || "",
+        evenement_id: commentaire.evenement_id || evenementId || "",
+        note: commentaire.note || "",
+      })
     } else if (isOpen) {
-      // Reset form for new talent
-      setTalent({
-        nom: "",
-        email: "",
-        domaine_artiste: "",
-        statut_talent: "en_validation",
-        description_talent: "",
-        is_talent: true,
+      // Reset form for new commentaire
+      setFormData({
+        contenu: "",
+        utilisateur_id: "",
+        evenement_id: evenementId || "",
+        note: "",
       })
     }
-  }, [isOpen, talentId])
-
-  const fetchTalent = async () => {
-    setLoading(true)
-    try {
-      const response = await api.get(`/utilisateurs/${talentId}`)
-      setTalent(response.data)
-    } catch (error) {
-      console.error("Error fetching talent:", error)
-      setToast({
-        message: "Erreur lors de la récupération du talent",
-        type: "error",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [isOpen, commentaire, evenementId])
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setTalent((prev) => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "note" ? (value === "" ? "" : Number.parseInt(value)) : value,
     }))
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
+    e.preventDefault()
+    setSaving(true)
 
     try {
-      const payload = {
-        ...talent,
-        // Ensure all required fields are included
-        password: "defaultPassword", // Replace with password generation logic if needed
-        role: "utilisateur"
-      };
+      const payload = { ...formData }
 
-      if (talentId) {
-        // Update existing talent
-        await api.put(`/utilisateurs/${talentId}`, payload);
+      if (commentaire?.id) {
+        // Update existing commentaire
+        await api.put(`/commentaires/${commentaire.id}`, payload)
         setToast({
-          message: "Talent mis à jour avec succès",
+          message: "Commentaire mis à jour avec succès",
           type: "success",
-        });
+        })
       } else {
-        // Create new talent
-        await api.post("/utilisateurs", payload);
+        // Create new commentaire
+        await api.post("/commentaires", payload)
         setToast({
-          message: "Talent créé avec succès",
+          message: "Commentaire créé avec succès",
           type: "success",
-        });
+        })
       }
 
-      if (onSuccess) onSuccess();
-      setTimeout(() => onClose(), 1500);
+      if (onSuccess) onSuccess()
+      setTimeout(() => onClose(), 1500)
     } catch (error) {
-      console.error("Error saving talent:", error);
+      console.error("Error saving commentaire:", error)
       setToast({
         message: error.response?.data?.message || "Erreur lors de l'enregistrement",
         type: "error",
-      });
+      })
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
   }
 
@@ -105,7 +85,7 @@ export default function TalentForm({ isOpen, onClose, talentId = null, onSuccess
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={talentId ? "Modifier le talent" : "Ajouter un talent"}
+        title={commentaire?.id ? "Modifier le commentaire" : "Nouveau commentaire"}
         footer={
           <>
             <button
@@ -158,64 +138,69 @@ export default function TalentForm({ isOpen, onClose, talentId = null, onSuccess
         ) : (
           <form className="space-y-4">
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Nom</label>
-              <input
-                type="text"
-                name="nom"
-                value={talent.nom}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={talent.email}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Domaine artistique</label>
-              <input
-                type="text"
-                name="domaine_artiste"
-                value={talent.domaine_artiste}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Statut</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">Événement</label>
               <select
-                name="statut_talent"
-                value={talent.statut_talent}
+                name="evenement_id"
+                value={formData.evenement_id}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
+                required
+                disabled={!!evenementId}
               >
-                <option value="en_validation">En validation</option>
-                <option value="actif">Actif</option>
-                <option value="inactif">Inactif</option>
+                <option value="">Sélectionner un événement</option>
+                {events.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.titre}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Description</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">Utilisateur</label>
+              <select
+                name="utilisateur_id"
+                value={formData.utilisateur_id}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
+                required
+              >
+                <option value="">Sélectionner un utilisateur</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.nom} ({user.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block mb-2 text-sm font-medium text-gray-700">Contenu</label>
               <textarea
-                name="description_talent"
-                value={talent.description_talent}
+                name="contenu"
+                value={formData.contenu}
                 onChange={handleChange}
                 rows="4"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
+                required
               ></textarea>
+            </div>
+
+            <div>
+              <label className="block mb-2 text-sm font-medium text-gray-700">Note (1-5)</label>
+              <select
+                name="note"
+                value={formData.note}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
+              >
+                <option value="">Sans note</option>
+                <option value="1">1 étoile</option>
+                <option value="2">2 étoiles</option>
+                <option value="3">3 étoiles</option>
+                <option value="4">4 étoiles</option>
+                <option value="5">5 étoiles</option>
+              </select>
             </div>
           </form>
         )}

@@ -1,97 +1,136 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Modal from "./Modal"
-import api from "../api"
-import Cookies from "js-cookie"
-import EventForm from "./EventForm"
-import EventDetails from "./EventDetails"
+import { useState, useEffect } from "react";
+import Modal from "./Modal";
+import api from "../api";
+import Cookies from "js-cookie";
+import EventForm from "./EventForm";
+import EventDetails from "./EventDetails";
+import Toast from "./Toast";
 
 export default function EventsTable({ limit }) {
-  const [events, setEvents] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [selectedId, setSelectedId] = useState(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [typeFilter, setTypeFilter] = useState("")
-  const [showEventForm, setShowEventForm] = useState(false)
-  const [showEventDetails, setShowEventDetails] = useState(false)
-  const [editingEventId, setEditingEventId] = useState(null)
-  const [viewingEventId, setViewingEventId] = useState(null)
-  const userRole = Cookies.get("userRole")
-  const canDelete = userRole === "superadmin"
+  const [events, setEvents] = useState([]);
+  const [spaces, setSpaces] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [showEventDetails, setShowEventDetails] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [viewingEvent, setViewingEvent] = useState(null);
+  const [toast, setToast] = useState(null);
+  const userRole = Cookies.get("userRole");
+  const canDelete = userRole === "superadmin";
 
   useEffect(() => {
-    fetchEvents()
-  }, [limit])
+    fetchAllData();
+  }, [limit]);
+
+  const fetchAllData = async () => {
+    setLoading(true);
+    try {
+      // Fetch all data in parallel, updating the events query to expand space information
+      const [eventsRes, spacesRes] = await Promise.all([
+        api.get("/evenements?_expand=espace"),
+        api.get("/espaces"),
+      ]);
+      
+      // Combine event data with space names
+      const eventsWithSpaceNames = eventsRes.data.map(event => ({
+        ...event,
+        espace_nom: event.espace?.nom || `Espace #${event.espace_id}`
+      }));
+      
+      setEvents(eventsWithSpaceNames);
+      setSpaces(spacesRes.data);
+      setError(null);
+      setToast({ message: "Evenements chargées avec succès", type: "success" });
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError("Impossible de charger les données");
+      setToast({ message: "Erreur lors du chargement des données", type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getSpaceName = (spaceId) => {
+    const space = spaces.find((s) => s.id === spaceId);
+    return space ? space.nom : "N/A";
+  };
 
   const fetchEvents = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const response = await api.get("/evenements")
-      let data = response.data
+      const response = await api.get("/evenements");
+      let data = response.data;
 
       if (limit) {
-        data = data.slice(0, limit)
+        data = data.slice(0, limit);
       }
 
-      setEvents(data)
-      setError(null)
+      setEvents(data);
+      setError(null);
     } catch (err) {
-      console.error("Error fetching events:", err)
-      setError("Impossible de charger les événements")
+      console.error("Error fetching events:", err);
+      setError("Impossible de charger les événements");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDeleteClick = (id) => {
-    setSelectedId(id)
-    setShowConfirmModal(true)
-  }
+    setSelectedId(id);
+    setShowConfirmModal(true);
+  };
 
   const confirmDelete = async () => {
     try {
-      await api.delete(`/evenements/${selectedId}`)
-      setEvents(events.filter((event) => event.id !== selectedId))
-      setShowConfirmModal(false)
+      await api.delete(`/evenements/${selectedId}`);
+      setEvents(events.filter((event) => event.id !== selectedId));
+      setShowConfirmModal(false);
+      setToast({ message: "Événement supprimé avec succès", type: "success" });
     } catch (error) {
-      console.error("Error deleting event:", error)
-      setError("Erreur lors de la suppression de l'événement")
+      console.error("Error deleting event:", error);
+      setError("Erreur lors de la suppression de l'événement");
+      setToast({ message: "Erreur lors de la suppression", type: "error" });
     }
-  }
-
+  };
+  
   const handleAddEvent = () => {
-    setEditingEventId(null)
-    setShowEventForm(true)
-  }
+    setEditingEvent(null);
+    setShowEventForm(true);
+  };
+  
+  const handleEditEvent = (event) => {
+    setEditingEvent(event);
+    setShowEventForm(true);
+  };
 
-  const handleEditEvent = (id) => {
-    setEditingEventId(id)
-    setShowEventForm(true)
-  }
-
-  const handleViewEvent = (id) => {
-    setViewingEventId(id)
-    setShowEventDetails(true)
-  }
+  const handleViewEvent = (event) => {
+    // No need to enhance event with space name anymore since it's already included
+    setViewingEvent(event);
+    setShowEventDetails(true);
+  };
 
   const handleEventFormSuccess = () => {
-    fetchEvents()
-  }
+    fetchAllData();
+  };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A"
-    const date = new Date(dateString)
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
     return date.toLocaleDateString("fr-FR", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })
-  }
+    });
+  };
 
   const getTypeBadge = (type) => {
     const typeMap = {
@@ -100,7 +139,7 @@ export default function EventsTable({ limit }) {
       conference: "bg-yellow-100 text-yellow-800",
       exposition: "bg-blue-100 text-blue-800",
       rencontre: "bg-purple-100 text-purple-800",
-    }
+    };
 
     const typeText = {
       spectacle: "Spectacle",
@@ -108,32 +147,36 @@ export default function EventsTable({ limit }) {
       conference: "Conférence",
       exposition: "Exposition",
       rencontre: "Rencontre",
-    }
+    };
 
-    const className = typeMap[type] || "bg-gray-100 text-gray-800"
+    const className = typeMap[type] || "bg-gray-100 text-gray-800";
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${className}`}>
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium ${className}`}
+      >
         {typeText[type] || type || "N/A"}
       </span>
-    )
-  }
+    );
+  };
 
   // Filter events based on search term and type
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
-      searchTerm === "" || (event.titre && event.titre.toLowerCase().includes(searchTerm.toLowerCase()))
+      searchTerm === "" ||
+      (event.titre &&
+        event.titre.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesType = typeFilter === "" || event.type === typeFilter
+    const matchesType = typeFilter === "" || event.type === typeFilter;
 
-    return matchesSearch && matchesType
-  })
+    return matchesSearch && matchesType;
+  });
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[oklch(47.3%_0.137_46.201)]"></div>
       </div>
-    )
+    );
   }
 
   if (error && events.length === 0) {
@@ -141,7 +184,7 @@ export default function EventsTable({ limit }) {
       <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4">
         <p>{error}</p>
       </div>
-    )
+    );
   }
 
   if (filteredEvents.length === 0) {
@@ -155,7 +198,7 @@ export default function EventsTable({ limit }) {
           Ajouter un événement
         </button>
       </div>
-    )
+    );
   }
 
   return (
@@ -196,10 +239,18 @@ export default function EventsTable({ limit }) {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Titre</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                ID
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Titre
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Type
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
@@ -208,25 +259,36 @@ export default function EventsTable({ limit }) {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredEvents.map((event) => (
               <tr key={event.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{event.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{event.titre}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{getTypeBadge(event.type)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(event.date_debut)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {event.id}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {event.titre}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {getTypeBadge(event.type)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {formatDate(event.date_debut)}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
-                    onClick={() => handleViewEvent(event.id)}
+                    onClick={() => handleViewEvent(event)}
                     className="text-[oklch(47.3%_0.137_46.201)] hover:text-[oklch(50%_0.137_46.201)] mr-3"
                   >
                     Détails
                   </button>
                   <button
-                    onClick={() => handleEditEvent(event.id)}
+                    onClick={() => handleEditEvent(event)}
                     className="text-amber-600 hover:text-amber-900 mr-3"
                   >
                     Modifier
                   </button>
                   {canDelete && (
-                    <button onClick={() => handleDeleteClick(event.id)} className="text-red-600 hover:text-red-900">
+                    <button
+                      onClick={() => handleDeleteClick(event.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
                       Supprimer
                     </button>
                   )}
@@ -249,30 +311,41 @@ export default function EventsTable({ limit }) {
             >
               Annuler
             </button>
-            <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+            <button
+              onClick={confirmDelete}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
               Supprimer
             </button>
           </>
         }
       >
         <p className="text-sm text-gray-500">
-          Êtes-vous sûr de vouloir supprimer cet événement ? Cette action est irréversible.
+          Êtes-vous sûr de vouloir supprimer cet événement ? Cette action est
+          irréversible.
         </p>
       </Modal>
 
       <EventForm
         isOpen={showEventForm}
         onClose={() => setShowEventForm(false)}
-        eventId={editingEventId}
+        event={editingEvent}
         onSuccess={handleEventFormSuccess}
+        spaces={spaces}
       />
 
       <EventDetails
         isOpen={showEventDetails}
         onClose={() => setShowEventDetails(false)}
-        eventId={viewingEventId}
-        onEdit={handleEditEvent}
+        event={viewingEvent}
+        onEdit={() => {
+          setShowEventDetails(false);
+          setEditingEvent(viewingEvent);
+          setShowEventForm(true);
+        }}
       />
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </>
-  )
+  );
 }

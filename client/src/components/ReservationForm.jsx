@@ -1,156 +1,151 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Modal from "./Modal"
-import api from "../api"
-import Toast from "./Toast"
+import { useState, useEffect } from "react";
+import Modal from "./Modal";
+import api from "../api";
+import Toast from "./Toast";
 
-export default function ReservationForm({ isOpen, onClose, reservationId = null, onSuccess }) {
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [toast, setToast] = useState(null)
-  const [reservation, setReservation] = useState({
+export default function ReservationForm({
+  isOpen,
+  onClose,
+  reservation = null,
+  onSuccess,
+}) {
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [formReservation, setFormReservation] = useState({
     evenement_id: "",
     utilisateur_id: "",
     date_reservation: formatDateForInput(new Date()),
     statut: "en_attente",
     nombre_places: 1,
-  })
-  const [events, setEvents] = useState([])
-  const [users, setUsers] = useState([])
+  });
+  const [events, setEvents] = useState([]);
+  const [users, setUsers] = useState([]);
 
   // Fetch reservation data if editing
   useEffect(() => {
-    if (isOpen && reservationId) {
-      fetchReservation()
+    if (isOpen && reservation) {
+      // Editing: fill form with reservation prop
+      setFormReservation({
+        ...reservation,
+        date_reservation: formatDateForInput(new Date(reservation.date_reservation)),
+      });
+      fetchEvents()
+      fetchUsers()
     } else if (isOpen) {
       // Reset form for new reservation
-      setReservation({
+      setFormReservation({
         evenement_id: "",
         utilisateur_id: "",
         date_reservation: formatDateForInput(new Date()),
         statut: "en_attente",
         nombre_places: 1,
-      })
+      });
       fetchEvents()
       fetchUsers()
     }
-  }, [isOpen, reservationId])
+  }, [isOpen, reservation]);
+
+  // Remove this function, it's not needed anymore:
+  // const fetchReservation = async () => { ... }
 
   function formatDateForInput(date) {
-    return date.toISOString().slice(0, 16)
+    return date.toISOString().slice(0, 16);
   }
 
   const fetchReservation = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const response = await api.get(`/reservations/${reservationId}`)
-      const reservationData = response.data
+      const response = await api.get(`/reservations/${reservationId}`);
+      const reservationData = response.data;
 
       // Format date for input field
       setReservation({
         ...reservationData,
-        date_reservation: formatDateForInput(new Date(reservationData.date_reservation)),
-      })
+        date_reservation: formatDateForInput(
+          new Date(reservationData.date_reservation)
+        ),
+      });
 
       // Fetch related data
-      fetchEvents()
-      fetchUsers()
+      fetchEvents();
+      fetchUsers();
     } catch (error) {
-      console.error("Error fetching reservation:", error)
+      console.error("Error fetching reservation:", error);
       setToast({
         message: "Erreur lors de la récupération de la réservation",
         type: "error",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchEvents = async () => {
     try {
-      const response = await api.get("/evenements")
-      setEvents(response.data)
+      const response = await api.get("/evenements");
+      setEvents(response.data);
     } catch (error) {
-      console.error("Error fetching events:", error)
+      console.error("Error fetching events:", error);
       setToast({
         message: "Erreur lors de la récupération des événements",
         type: "error",
-      })
+      });
     }
-  }
+  };
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get("/utilisateurs")
-      setUsers(response.data)
+      const response = await api.get("/utilisateurs");
+      setUsers(response.data);
     } catch (error) {
-      console.error("Error fetching users:", error)
+      console.error("Error fetching users:", error);
       setToast({
         message: "Erreur lors de la récupération des utilisateurs",
         type: "error",
-      })
+      });
     }
-  }
+  };
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setReservation((prev) => ({
+    const { name, value } = e.target;
+    setFormReservation((prev) => ({
       ...prev,
       [name]: name === "nombre_places" ? Number.parseInt(value, 10) : value,
-    }))
-  }
+    }));
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setSaving(true)
-
+    e.preventDefault();
+    setSaving(true);
+    setToast(null);
     try {
-      const payload = {
-        ...reservation,
-        date_reservation: new Date(reservation.date_reservation).toISOString(),
-      }
-
-      if (reservationId) {
-        // Update existing reservation
-        await api.put(`/reservations/${reservationId}`, payload)
-        setToast({
-          message: "Réservation mise à jour avec succès",
-          type: "success",
-        })
+      if (reservation && reservation.id) {
+        await api.put(`/reservations/${reservation.id}`, formReservation);
       } else {
-        // Create new reservation
-        await api.post("/reservations", payload)
-        setToast({
-          message: "Réservation créée avec succès",
-          type: "success",
-        })
+        await api.post("/reservations", formReservation);
       }
-
-      // Call success callback
-      if (onSuccess) onSuccess()
-
-      // Close modal after a short delay
-      setTimeout(() => {
-        onClose()
-      }, 1500)
+      setToast({ message: "Réservation enregistrée avec succès", type: "success" });
+      if (onSuccess) onSuccess();
     } catch (error) {
-      console.error("Error saving reservation:", error)
       setToast({
         message: "Erreur lors de l'enregistrement de la réservation",
         type: "error",
-      })
+      });
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
-
+  };
   return (
     <>
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={reservationId ? "Modifier la réservation" : "Nouvelle réservation"}
+        title={
+          reservation && reservation.id ? "Modifier la réservation" : "Nouvelle réservation"
+        }
         footer={
           <>
             <button
@@ -203,10 +198,12 @@ export default function ReservationForm({ isOpen, onClose, reservationId = null,
         ) : (
           <form className="space-y-4">
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Événement</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">
+                Événement
+              </label>
               <select
                 name="evenement_id"
-                value={reservation.evenement_id}
+                value={formReservation.evenement_id}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
                 required
@@ -221,10 +218,12 @@ export default function ReservationForm({ isOpen, onClose, reservationId = null,
             </div>
 
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Utilisateur</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">
+                Utilisateur
+              </label>
               <select
                 name="utilisateur_id"
-                value={reservation.utilisateur_id}
+                value={formReservation.utilisateur_id}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
                 required
@@ -239,11 +238,13 @@ export default function ReservationForm({ isOpen, onClose, reservationId = null,
             </div>
 
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Date de réservation</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">
+                Date de réservation
+              </label>
               <input
                 type="datetime-local"
                 name="date_reservation"
-                value={reservation.date_reservation}
+                value={formReservation.date_reservation}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
                 required
@@ -251,11 +252,13 @@ export default function ReservationForm({ isOpen, onClose, reservationId = null,
             </div>
 
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Nombre de places</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">
+                Nombre de places
+              </label>
               <input
                 type="number"
                 name="nombre_places"
-                value={reservation.nombre_places}
+                value={formReservation.nombre_places}
                 onChange={handleChange}
                 min="1"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
@@ -264,10 +267,12 @@ export default function ReservationForm({ isOpen, onClose, reservationId = null,
             </div>
 
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">Statut</label>
+              <label className="block mb-2 text-sm font-medium text-gray-700">
+                Statut
+              </label>
               <select
                 name="statut"
-                value={reservation.statut}
+                value={formReservation.statut}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(47.3%_0.137_46.201)]"
               >
@@ -279,7 +284,13 @@ export default function ReservationForm({ isOpen, onClose, reservationId = null,
           </form>
         )}
       </Modal>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </>
-  )
+  );
 }

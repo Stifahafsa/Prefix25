@@ -24,12 +24,12 @@ export default function ReservationsPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-[oklch(0.145_0_0)]">Gestion des réservations</h1>
             <p className="text-[oklch(0.556_0_0)] mt-1">Consultez et gérez toutes les réservations</p>
           </div>
-          <button
+          {/* <button
             className="bg-orange-800 text-white px-6 py-2 rounded-lg"
             onClick={() => setShowReservationForm(true)}
           >
             Nouvelle réservation
-          </button>
+          </button> */}
         </div>
 
         {/* Main Content */}

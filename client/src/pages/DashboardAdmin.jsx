@@ -6,20 +6,25 @@ import SummaryCards from "../components/SummaryCards";
 import ReservationsTable from "../components/ReservationsTable";
 import EventsTable from "../components/EventsTable";
 import TalentsTable from "../components/TalentsTable";
+import UsersTable from "../components/UsersTable";
+import EspacesTable from "../components/EspacesTable";
+import CommentairesTable from "../components/CommentairesTable";
 import ReportsChart from "../components/ReportsChart";
 import api from "../api";
 import { useNavigate } from "react-router-dom";
+import Toast from "../components/Toast";
 
 export default function DashboardAdmin() {
   const [stats, setStats] = useState([
     { label: "Réservations", value: 0 },
     { label: "Événements", value: 0 },
     { label: "Talents", value: 0 },
-    { label: "Rapports", value: 0 },
+    { label: "Utilisateurs", value: 0 },
   ]);
 
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
   const navigate = useNavigate();
 
   // Fetch dashboard data
@@ -38,9 +43,13 @@ export default function DashboardAdmin() {
             },
             { label: "Événements", value: statsResponse.data.events || 0 },
             { label: "Talents", value: statsResponse.data.talents || 0 },
-            { label: "Rapports", value: statsResponse.data.reports || 0 },
+            { label: "Utilisateurs", value: statsResponse.data.users || 0 },
           ]);
         }
+        setToast({
+          message: "Données du tableau de bord chargées avec succès",
+          type: "success",
+        });
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         // Use mock data for development
@@ -48,7 +57,7 @@ export default function DashboardAdmin() {
           { label: "Réservations", value: 24 },
           { label: "Événements", value: 12 },
           { label: "Talents", value: 8 },
-          { label: "Rapports", value: 5 },
+          { label: "Utilisateurs", value: 36 },
         ]);
       } finally {
         setLoading(false);
@@ -186,6 +195,81 @@ export default function DashboardAdmin() {
               </button>
 
               <button
+                onClick={() => handleTabChange("users")}
+                className={`flex items-center gap-2 px-4 py-2 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === "users"
+                    ? "border-[oklch(47.3%_0.137_46.201)] text-[oklch(47.3%_0.137_46.201)]"
+                    : "border-transparent text-[oklch(0.556_0_0)] hover:text-[oklch(0.3_0_0)]"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                <span className="hidden md:inline">Utilisateurs</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange("espaces")}
+                className={`flex items-center gap-2 px-4 py-2 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === "espaces"
+                    ? "border-[oklch(47.3%_0.137_46.201)] text-[oklch(47.3%_0.137_46.201)]"
+                    : "border-transparent text-[oklch(0.556_0_0)] hover:text-[oklch(0.3_0_0)]"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  />
+                </svg>
+                <span className="hidden md:inline">Espaces</span>
+              </button>
+
+              <button
+                onClick={() => handleTabChange("commentaires")}
+                className={`flex items-center gap-2 px-4 py-2 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === "commentaires"
+                    ? "border-[oklch(47.3%_0.137_46.201)] text-[oklch(47.3%_0.137_46.201)]"
+                    : "border-transparent text-[oklch(0.556_0_0)] hover:text-[oklch(0.3_0_0)]"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                  />
+                </svg>
+                <span className="hidden md:inline">Commentaires</span>
+              </button>
+
+              <button
                 onClick={() => handleTabChange("reports")}
                 className={`flex items-center gap-2 px-4 py-2 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
                   activeTab === "reports"
@@ -276,6 +360,12 @@ export default function DashboardAdmin() {
                       <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
                         Gestion des événements
                       </h2>
+                      <button
+                        onClick={() => navigate("/events/new")}
+                        className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
+                      >
+                        Nouvel événement
+                      </button>
                     </div>
                     <EventsTable />
                   </div>
@@ -298,29 +388,63 @@ export default function DashboardAdmin() {
                   </div>
                 )}
 
+                {activeTab === "users" && (
+                  <div>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
+                        Gestion des utilisateurs
+                      </h2>
+                      <button
+                        onClick={() => navigate("/users/new")}
+                        className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
+                      >
+                        Ajouter un utilisateur
+                      </button>
+                    </div>
+                    <UsersTable />
+                  </div>
+                )}
+
+                {activeTab === "espaces" && (
+                  <div>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
+                        Gestion des espaces
+                      </h2>
+                      <button
+                        onClick={() => navigate("/espaces/new")}
+                        className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
+                      >
+                        Ajouter un espace
+                      </button>
+                    </div>
+                    <EspacesTable />
+                  </div>
+                )}
+
+                {activeTab === "commentaires" && (
+                  <div>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
+                        Gestion des commentaires
+                      </h2>
+                      <button
+                        onClick={() => navigate("/commentaires/new")}
+                        className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
+                      >
+                        Ajouter un commentaire
+                      </button>
+                    </div>
+                    <CommentairesTable />
+                  </div>
+                )}
+
                 {activeTab === "reports" && (
                   <div>
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
                         Rapports et statistiques
                       </h2>
-                      <button className="px-4 py-2 bg-gray-200 text-[oklch(0.145_0_0)] rounded-lg shadow hover:bg-gray-300 transition-colors flex items-center gap-1">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-5 h-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                          />
-                        </svg>
-                        Exporter
-                      </button>
                     </div>
                     <ReportsChart />
                   </div>
@@ -330,6 +454,7 @@ export default function DashboardAdmin() {
           </div>
         </div>
       </div>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </DashboardLayout>
   );
 }
