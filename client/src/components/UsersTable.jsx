@@ -21,6 +21,9 @@ export default function UsersTable({ limit }) {
   const [editingUserId, setEditingUserId] = useState(null)
   const [viewingUserId, setViewingUserId] = useState(null)
   const [toast, setToast] = useState(null)
+  // Ajout des états pour la pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
   const userRole = Cookies.get("userRole")
   const canDelete = userRole === "superadmin"
 
@@ -97,6 +100,7 @@ export default function UsersTable({ limit }) {
 
   const handleUserFormSuccess = () => {
     fetchUsers()
+    setCurrentPage(1) // Reset to first page after adding/editing
   }
 
   const getRoleBadge = (role) => {
@@ -132,6 +136,14 @@ export default function UsersTable({ limit }) {
     return matchesSearch && matchesRole
   })
 
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentItems = filteredUsers.slice(indexOfFirstItem, indexOfLastItem)
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber)
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -144,20 +156,6 @@ export default function UsersTable({ limit }) {
     return (
       <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4">
         <p>{error}</p>
-      </div>
-    )
-  }
-
-  if (filteredUsers.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-500 mb-4">Aucun utilisateur trouvé</p>
-        <button
-          onClick={handleAddUser}
-          className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
-        >
-          Ajouter un utilisateur
-        </button>
       </div>
     )
   }
@@ -194,50 +192,131 @@ export default function UsersTable({ limit }) {
         )}
       </div>
 
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rôle</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.nom}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{getRoleBadge(user.role)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+      {filteredUsers.length === 0 ? (
+        <div className="text-center py-8 border border-gray-200 rounded-lg bg-white">
+          <p className="text-gray-500 mb-4">Aucun utilisateur trouvé</p>
+         
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto bg-white rounded-lg shadow">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rôle</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {currentItems.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.nom}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{getRoleBadge(user.role)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => handleViewUser(user.id)}
+                        className="text-[oklch(47.3%_0.137_46.201)] hover:text-[oklch(50%_0.137_46.201)] mr-3"
+                      >
+                        Détails
+                      </button>
+                      <button
+                        onClick={() => handleEditUser(user.id)}
+                        className="text-amber-600 hover:text-amber-900 mr-3"
+                      >
+                        Modifier
+                      </button>
+                      {canDelete && user.id !== parseInt(Cookies.get("userId"), 10) && (
+                        <button onClick={() => handleDeleteClick(user.id)} className="text-red-600 hover:text-red-900">
+                          Supprimer
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {filteredUsers.length > itemsPerPage && (
+            <div className="flex items-center justify-between mt-4">
+              {/* Affichage du texte indiquant la plage d'éléments affichés */}
+              <div className="text-sm text-gray-500">
+                Affichage de {indexOfFirstItem + 1} à {Math.min(indexOfLastItem, filteredUsers.length)} sur {filteredUsers.length} utilisateurs
+              </div>
+
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => paginate(1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded-md ${
+                    currentPage === 1
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  «
+                </button>
+                <button
+                  onClick={() => paginate(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded-md ${
+                    currentPage === 1
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  ‹
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
                   <button
-                    onClick={() => handleViewUser(user.id)}
-                    className="text-[oklch(47.3%_0.137_46.201)] hover:text-[oklch(50%_0.137_46.201)] mr-3"
+                    key={number}
+                    onClick={() => paginate(number)}
+                    className={`px-3 py-1 rounded-md ${
+                      currentPage === number
+                        ? "bg-[oklch(47.3%_0.137_46.201)] text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
                   >
-                    Détails
+                    {number}
                   </button>
-                  <button
-                    onClick={() => handleEditUser(user.id)}
-                    className="text-amber-600 hover:text-amber-900 mr-3"
-                  >
-                    Modifier
-                  </button>
-                  {canDelete && user.id !== parseInt(Cookies.get("userId"), 10) && (
-                    <button onClick={() => handleDeleteClick(user.id)} className="text-red-600 hover:text-red-900">
-                      Supprimer
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                ))}
+
+                <button
+                  onClick={() => paginate(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded-md ${
+                    currentPage === totalPages
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  ›
+                </button>
+                <button
+                  onClick={() => paginate(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded-md ${
+                    currentPage === totalPages
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  »
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       <Modal
         isOpen={showConfirmModal}

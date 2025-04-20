@@ -1,68 +1,68 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Modal from "./Modal"
-import api from "../api"
-import Cookies from "js-cookie"
-import CommentaireForm from "./CommentaireForm"
-import CommentaireDetails from "./CommentaireDetails"
-import Toast from "./Toast"
+import { useState, useEffect } from "react";
+import Modal from "./Modal";
+import api from "../api";
+import Cookies from "js-cookie";
+import CommentaireForm from "./CommentaireForm";
+import CommentaireDetails from "./CommentaireDetails";
+import Toast from "./Toast";
 
 export default function CommentairesTable({ limit, evenementId = null }) {
-  const [commentaires, setCommentaires] = useState([])
-  const [events, setEvents] = useState([])
-  const [users, setUsers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [selectedId, setSelectedId] = useState(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [noteFilter, setNoteFilter] = useState("")
-  const [showCommentaireForm, setShowCommentaireForm] = useState(false)
-  const [showCommentaireDetails, setShowCommentaireDetails] = useState(false)
-  const [editingCommentaire, setEditingCommentaire] = useState(null)
-  const [viewingCommentaire, setViewingCommentaire] = useState(null)
-  const [toast, setToast] = useState(null)
-  const userRole = Cookies.get("userRole")
-  const canDelete = userRole === "superadmin" || userRole === "admin"
+  const [commentaires, setCommentaires] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [noteFilter, setNoteFilter] = useState("");
+  const [showCommentaireForm, setShowCommentaireForm] = useState(false);
+  const [showCommentaireDetails, setShowCommentaireDetails] = useState(false);
+  const [editingCommentaire, setEditingCommentaire] = useState(null);
+  const [viewingCommentaire, setViewingCommentaire] = useState(null);
+  const [toast, setToast] = useState(null);
+  const userRole = Cookies.get("userRole");
+  const canDelete = userRole === "superadmin" || userRole === "admin";
 
   useEffect(() => {
-    fetchAllData()
-  }, [limit, evenementId])
+    fetchAllData();
+  }, [limit, evenementId]);
 
   const fetchAllData = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       // Construire l'URL avec le filtre d'événement optionnel
-      const url = evenementId 
-        ? `/commentaires?evenement_id=${evenementId}` 
-        : "/commentaires"
-      
+      const url = evenementId
+        ? `/commentaires?evenement_id=${evenementId}`
+        : "/commentaires";
+
       // Récupérer toutes les données en parallèle
       const [commentairesRes, eventsRes, usersRes] = await Promise.all([
         api.get(url),
         api.get("/evenements"),
         api.get("/utilisateurs"),
-      ])
+      ]);
 
-      let commentairesData = commentairesRes.data
-      
+      let commentairesData = commentairesRes.data;
+
       if (limit) {
-        commentairesData = commentairesData.slice(0, limit)
+        commentairesData = commentairesData.slice(0, limit);
       }
 
-      setCommentaires(commentairesData)
-      setEvents(eventsRes.data)
-      setUsers(usersRes.data)
-      setError(null)
+      setCommentaires(commentairesData);
+      setEvents(eventsRes.data);
+      setUsers(usersRes.data);
+      setError(null);
       setToast({
         message: "Commentaires chargés avec succès",
         type: "success",
-      })
+      });
     } catch (err) {
-      console.error("Error fetching data:", err)
-      setError("Impossible de charger les données")
-      
+      console.error("Error fetching data:", err);
+      setError("Impossible de charger les données");
+
       // Utiliser des données fictives pour le développement
       setCommentaires([
         {
@@ -71,7 +71,7 @@ export default function CommentairesTable({ limit, evenementId = null }) {
           date_creation: "2025-04-15T14:30:00",
           utilisateur_id: 2,
           evenement_id: 1,
-          note: 5
+          note: 5,
         },
         {
           id: 2,
@@ -79,7 +79,7 @@ export default function CommentairesTable({ limit, evenementId = null }) {
           date_creation: "2025-04-16T10:15:00",
           utilisateur_id: 3,
           evenement_id: 1,
-          note: 3
+          note: 3,
         },
         {
           id: 3,
@@ -87,75 +87,77 @@ export default function CommentairesTable({ limit, evenementId = null }) {
           date_creation: "2025-04-17T16:45:00",
           utilisateur_id: 2,
           evenement_id: 2,
-          note: 4
-        }
-      ])
-      
+          note: 4,
+        },
+      ]);
+
       setEvents([
         { id: 1, titre: "Concert Andalou" },
-        { id: 2, titre: "Atelier Photo" }
-      ])
-      
+        { id: 2, titre: "Atelier Photo" },
+      ]);
+
       setUsers([
         { id: 1, nom: "Admin", email: "admin@culture.ma" },
         { id: 2, nom: "Fatima Zahra", email: "fatima@artiste.ma" },
-        { id: 3, nom: "Ahmed Photographe", email: "ahmed@photo.ma" }
-      ])
-      
+        { id: 3, nom: "Ahmed Photographe", email: "ahmed@photo.ma" },
+      ]);
+
       setToast({
         message: "Utilisation de données de démonstration",
         type: "info",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Fonction pour obtenir le titre de l'événement par ID
   const getEventTitle = (eventId) => {
-    const event = events.find((e) => e.id === eventId)
-    return event ? event.titre : "N/A"
-  }
+    const event = events.find((e) => e.id === eventId);
+    return event ? event.titre : "N/A";
+  };
 
   // Fonction pour obtenir le nom de l'utilisateur par ID
   const getUserName = (userId) => {
-    const user = users.find((u) => u.id === userId)
-    return user ? user.nom : "N/A"
-  }
+    const user = users.find((u) => u.id === userId);
+    return user ? user.nom : "N/A";
+  };
 
   const handleDeleteClick = (id) => {
-    setSelectedId(id)
-    setShowConfirmModal(true)
-  }
+    setSelectedId(id);
+    setShowConfirmModal(true);
+  };
 
   const confirmDelete = async () => {
     try {
-      await api.delete(`/commentaires/${selectedId}`)
-      setCommentaires(commentaires.filter((commentaire) => commentaire.id !== selectedId))
-      setShowConfirmModal(false)
+      await api.delete(`/commentaires/${selectedId}`);
+      setCommentaires(
+        commentaires.filter((commentaire) => commentaire.id !== selectedId)
+      );
+      setShowConfirmModal(false);
       setToast({
         message: "Commentaire supprimé avec succès",
         type: "success",
-      })
+      });
     } catch (error) {
-      console.error("Error deleting commentaire:", error)
-      setError("Erreur lors de la suppression du commentaire")
+      console.error("Error deleting commentaire:", error);
+      setError("Erreur lors de la suppression du commentaire");
       setToast({
         message: "Erreur lors de la suppression",
         type: "error",
-      })
+      });
     }
-  }
+  };
 
   const handleAddCommentaire = () => {
-    setEditingCommentaire(null)
-    setShowCommentaireForm(true)
-  }
+    setEditingCommentaire(null);
+    setShowCommentaireForm(true);
+  };
 
   const handleEditCommentaire = (commentaire) => {
-    setEditingCommentaire(commentaire)
-    setShowCommentaireForm(true)
-  }
+    setEditingCommentaire(commentaire);
+    setShowCommentaireForm(true);
+  };
 
   const handleViewCommentaire = (commentaire) => {
     // Créer un objet commentaire amélioré avec tous les détails nécessaires
@@ -163,68 +165,73 @@ export default function CommentairesTable({ limit, evenementId = null }) {
       ...commentaire,
       evenement_titre: getEventTitle(commentaire.evenement_id),
       utilisateur_nom: getUserName(commentaire.utilisateur_id),
-    }
-    setViewingCommentaire(enhancedCommentaire)
-    setShowCommentaireDetails(true)
-  }
+    };
+    setViewingCommentaire(enhancedCommentaire);
+    setShowCommentaireDetails(true);
+  };
 
   const handleCommentaireFormSuccess = () => {
-    fetchAllData()
-  }
+    fetchAllData();
+  };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A"
-    const date = new Date(dateString)
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
     return date.toLocaleDateString("fr-FR", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })
-  }
+    });
+  };
 
   const getNoteBadge = (note) => {
-    if (!note) return null
-    
+    if (!note) return null;
+
     const noteMap = {
       1: "bg-red-100 text-red-800",
       2: "bg-orange-100 text-orange-800",
       3: "bg-yellow-100 text-yellow-800",
       4: "bg-lime-100 text-lime-800",
       5: "bg-green-100 text-green-800",
-    }
+    };
 
-    const className = noteMap[note] || "bg-gray-100 text-gray-800"
+    const className = noteMap[note] || "bg-gray-100 text-gray-800";
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${className}`}>
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium ${className}`}
+      >
         {note} {note > 1 ? "étoiles" : "étoile"}
       </span>
-    )
-  }
+    );
+  };
 
   // Filtrer les commentaires en fonction du terme de recherche et de la note
   const filteredCommentaires = commentaires.filter((commentaire) => {
-    const eventTitle = getEventTitle(commentaire.evenement_id)
-    const userName = getUserName(commentaire.utilisateur_id)
+    const eventTitle = getEventTitle(commentaire.evenement_id);
+    const userName = getUserName(commentaire.utilisateur_id);
 
     const matchesSearch =
       searchTerm === "" ||
-      (commentaire.contenu && commentaire.contenu.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (commentaire.contenu &&
+        commentaire.contenu.toLowerCase().includes(searchTerm.toLowerCase())) ||
       eventTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      userName.toLowerCase().includes(searchTerm.toLowerCase())
+      userName.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesNote = noteFilter === "" || (commentaire.note && commentaire.note.toString() === noteFilter)
+    const matchesNote =
+      noteFilter === "" ||
+      (commentaire.note && commentaire.note.toString() === noteFilter);
 
-    return matchesSearch && matchesNote
-  })
+    return matchesSearch && matchesNote;
+  });
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[oklch(47.3%_0.137_46.201)]"></div>
       </div>
-    )
+    );
   }
 
   if (error && commentaires.length === 0) {
@@ -232,21 +239,15 @@ export default function CommentairesTable({ limit, evenementId = null }) {
       <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4">
         <p>{error}</p>
       </div>
-    )
+    );
   }
 
   if (filteredCommentaires.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-gray-500 mb-4">Aucun commentaire trouvé</p>
-        <button
-          onClick={handleAddCommentaire}
-          className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
-        >
-          Ajouter un commentaire
-        </button>
       </div>
-    )
+    );
   }
 
   return (
@@ -287,11 +288,21 @@ export default function CommentairesTable({ limit, evenementId = null }) {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Événement</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilisateur</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Note</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                ID
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Événement
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Utilisateur
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Note
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
@@ -300,7 +311,9 @@ export default function CommentairesTable({ limit, evenementId = null }) {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredCommentaires.map((commentaire) => (
               <tr key={commentaire.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{commentaire.id}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {commentaire.id}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {getEventTitle(commentaire.evenement_id)}
                 </td>
@@ -311,7 +324,9 @@ export default function CommentairesTable({ limit, evenementId = null }) {
                   {formatDate(commentaire.date_creation)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {commentaire.note ? getNoteBadge(commentaire.note) : "Sans note"}
+                  {commentaire.note
+                    ? getNoteBadge(commentaire.note)
+                    : "Sans note"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
@@ -327,7 +342,10 @@ export default function CommentairesTable({ limit, evenementId = null }) {
                     Modifier
                   </button>
                   {canDelete && (
-                    <button onClick={() => handleDeleteClick(commentaire.id)} className="text-red-600 hover:text-red-900">
+                    <button
+                      onClick={() => handleDeleteClick(commentaire.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
                       Supprimer
                     </button>
                   )}
@@ -350,14 +368,18 @@ export default function CommentairesTable({ limit, evenementId = null }) {
             >
               Annuler
             </button>
-            <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+            <button
+              onClick={confirmDelete}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
               Supprimer
             </button>
           </>
         }
       >
         <p className="text-sm text-gray-500">
-          Êtes-vous sûr de vouloir supprimer ce commentaire ? Cette action est irréversible.
+          Êtes-vous sûr de vouloir supprimer ce commentaire ? Cette action est
+          irréversible.
         </p>
       </Modal>
 
@@ -382,7 +404,13 @@ export default function CommentairesTable({ limit, evenementId = null }) {
         }}
       />
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </>
-  )
+  );
 }

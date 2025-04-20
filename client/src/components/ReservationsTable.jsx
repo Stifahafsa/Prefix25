@@ -25,6 +25,8 @@ export default function ReservationsTable({ limit }) {
   const userRole = Cookies.get("userRole");
   const canDelete = userRole === "superadmin";
   const [toast, setToast] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchAllData();
@@ -33,7 +35,6 @@ export default function ReservationsTable({ limit }) {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      // Fetch all data in parallel
       const [reservationsRes, eventsRes, usersRes] = await Promise.all([
         api.get("/reservations"),
         api.get("/evenements"),
@@ -44,10 +45,10 @@ export default function ReservationsTable({ limit }) {
       setEvents(eventsRes.data);
       setUsers(usersRes.data);
       setError(null);
+      setCurrentPage(1);
 
-      // Show toast after successful fetch
       setToast({
-        message: "Réservation chargées avec succès",
+        message: "Réservations chargées avec succès",
         type: "success",
       });
     } catch (err) {
@@ -62,13 +63,11 @@ export default function ReservationsTable({ limit }) {
     }
   };
 
-  // Helper function to get event name by ID
   const getEventName = (eventId) => {
     const event = events.find((e) => e.id === eventId);
     return event ? event.titre : "N/A";
   };
 
-  // Helper function to get user name by ID
   const getUserName = (userId) => {
     const user = users.find((u) => u.id === userId);
     return user ? user.nom : "N/A";
@@ -111,7 +110,6 @@ export default function ReservationsTable({ limit }) {
   };
 
   const handleViewReservation = (reservation) => {
-    // Create an enhanced reservation object with all needed details
     const enhancedReservation = {
       ...reservation,
       evenement_titre: getEventName(reservation.evenement_id),
@@ -167,7 +165,6 @@ export default function ReservationsTable({ limit }) {
     );
   };
 
-  // Filter reservations based on search term and status
   const filteredReservations = reservations.filter((reservation) => {
     const eventName = getEventName(reservation.evenement_id);
     const userName = getUserName(reservation.utilisateur_id);
@@ -183,6 +180,13 @@ export default function ReservationsTable({ limit }) {
     return matchesSearch && matchesStatus;
   });
 
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredReservations.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -195,20 +199,6 @@ export default function ReservationsTable({ limit }) {
     return (
       <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4">
         <p>{error}</p>
-      </div>
-    );
-  }
-
-  if (filteredReservations.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-500 mb-4">Aucune réservation trouvée</p>
-        <button
-          onClick={handleAddReservation}
-          className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
-        >
-          Nouvelle réservation
-        </button>
       </div>
     );
   }
@@ -245,83 +235,134 @@ export default function ReservationsTable({ limit }) {
         )}
       </div>
 
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                #
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Événement
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Utilisateur
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Statut
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredReservations.map((reservation, index) => (
-              <tr key={reservation.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {index + 1}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {getEventName(reservation.evenement_id)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {getUserName(reservation.utilisateur_id)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(reservation.date_reservation)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {getStatusBadge(reservation.statut)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+      {filteredReservations.length > 0 ? (
+        <>
+          <div className="overflow-x-auto bg-white rounded-lg shadow">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    #
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Événement
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Utilisateur
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Statut
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {currentItems.map((reservation, index) => (
+                  <tr key={reservation.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {indexOfFirstItem + index + 1}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {getEventName(reservation.evenement_id)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {getUserName(reservation.utilisateur_id)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(reservation.date_reservation)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(reservation.statut)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => handleViewReservation(reservation)}
+                        className="text-[oklch(47.3%_0.137_46.201)] hover:text-[oklch(50%_0.137_46.201)] mr-3"
+                      >
+                        Détails
+                      </button>
+                      <button
+                        onClick={() => handleEditReservation(reservation)}
+                        className="text-amber-600 hover:text-amber-900 mr-3"
+                      >
+                        Modifier
+                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDeleteClick(reservation.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Supprimer
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {filteredReservations.length > itemsPerPage && (
+            <div className="flex justify-between items-center mt-4">
+              <div className="text-sm text-gray-500">
+                Affichage de {indexOfFirstItem + 1} à{" "}
+                {Math.min(indexOfLastItem, filteredReservations.length)} sur{" "}
+                {filteredReservations.length} réservations
+              </div>
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => paginate(1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded-md ${currentPage === 1 ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+                >
+                  «
+                </button>
+                <button
+                  onClick={() => paginate(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded-md ${currentPage === 1 ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+                >
+                  ‹
+                </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
                   <button
-                    onClick={() =>
-                      handleViewReservation({
-                        ...reservation,
-                        evenement_titre: getEventName(reservation.evenement_id),
-                        utilisateur_nom: getUserName(
-                          reservation.utilisateur_id
-                        ),
-                      })
-                    }
-                    className="text-[oklch(47.3%_0.137_46.201)] hover:text-[oklch(50%_0.137_46.201)] mr-3"
+                    key={number}
+                    onClick={() => paginate(number)}
+                    className={`px-3 py-1 rounded-md ${currentPage === number ? "bg-[oklch(47.3%_0.137_46.201)] text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
                   >
-                    Détails
+                    {number}
                   </button>
-                  <button
-                    onClick={() => handleEditReservation(reservation)}
-                    className="text-amber-600 hover:text-amber-900 mr-3"
-                  >
-                    Modifier
-                  </button>
-                  {canDelete && (
-                    <button
-                      onClick={() => handleDeleteClick(reservation.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Supprimer
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                ))}
+                
+                <button
+                  onClick={() => paginate(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded-md ${currentPage === totalPages ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+                >
+                  ›
+                </button>
+                <button
+                  onClick={() => paginate(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded-md ${currentPage === totalPages ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+                >
+                  »
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="text-center py-8 bg-white rounded-lg shadow">
+          <p className="text-gray-500 mb-4">Aucune réservation trouvée</p>
+        </div>
+      )}
 
       <Modal
         isOpen={showConfirmModal}
@@ -359,7 +400,7 @@ export default function ReservationsTable({ limit }) {
         users={users}
       />
 
-<ReservationDetails
+      <ReservationDetails
         isOpen={showReservationDetails}
         onClose={() => setShowReservationDetails(false)}
         reservation={viewingReservation}

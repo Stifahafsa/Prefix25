@@ -22,6 +22,9 @@ export default function EventsTable({ limit }) {
   const [editingEvent, setEditingEvent] = useState(null);
   const [viewingEvent, setViewingEvent] = useState(null);
   const [toast, setToast] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10); // Nombre d'éléments par page
+
   const userRole = Cookies.get("userRole");
   const canDelete = userRole === "superadmin";
 
@@ -32,13 +35,11 @@ export default function EventsTable({ limit }) {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      // Fetch all data in parallel, updating the events query to expand space information
       const [eventsRes, spacesRes] = await Promise.all([
         api.get("/evenements?_expand=espace"),
         api.get("/espaces"),
       ]);
       
-      // Combine event data with space names
       const eventsWithSpaceNames = eventsRes.data.map(event => ({
         ...event,
         espace_nom: event.espace?.nom || `Espace #${event.espace_id}`
@@ -111,7 +112,6 @@ export default function EventsTable({ limit }) {
   };
 
   const handleViewEvent = (event) => {
-    // No need to enhance event with space name anymore since it's already included
     setViewingEvent(event);
     setShowEventDetails(true);
   };
@@ -171,6 +171,14 @@ export default function EventsTable({ limit }) {
     return matchesSearch && matchesType;
   });
 
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredEvents.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -183,20 +191,6 @@ export default function EventsTable({ limit }) {
     return (
       <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4">
         <p>{error}</p>
-      </div>
-    );
-  }
-
-  if (filteredEvents.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-500 mb-4">Aucun événement trouvé</p>
-        <button
-          onClick={handleAddEvent}
-          className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
-        >
-          Ajouter un événement
-        </button>
       </div>
     );
   }
@@ -235,69 +229,113 @@ export default function EventsTable({ limit }) {
         )}
       </div>
 
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Titre
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredEvents.map((event) => (
-              <tr key={event.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {event.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {event.titre}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {getTypeBadge(event.type)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(event.date_debut)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+      {filteredEvents.length === 0 ? (
+        <div className="text-center py-8 bg-white rounded-lg shadow">
+          <p className="text-gray-500 mb-4">Aucun événement trouvé</p>
+    
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto bg-white rounded-lg shadow">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Titre
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {currentItems.map((event) => (
+                  <tr key={event.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {event.id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {event.titre}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getTypeBadge(event.type)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(event.date_debut)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => handleViewEvent(event)}
+                        className="text-[oklch(47.3%_0.137_46.201)] hover:text-[oklch(50%_0.137_46.201)] mr-3"
+                      >
+                        Détails
+                      </button>
+                      <button
+                        onClick={() => handleEditEvent(event)}
+                        className="text-amber-600 hover:text-amber-900 mr-3"
+                      >
+                        Modifier
+                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDeleteClick(event.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Supprimer
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-4">
+              <nav className="inline-flex rounded-md shadow">
+                <button
+                  onClick={() => paginate(currentPage > 1 ? currentPage - 1 : 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Précédent
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
                   <button
-                    onClick={() => handleViewEvent(event)}
-                    className="text-[oklch(47.3%_0.137_46.201)] hover:text-[oklch(50%_0.137_46.201)] mr-3"
+                    key={number}
+                    onClick={() => paginate(number)}
+                    className={`px-3 py-1 border-t border-b border-gray-300 bg-white text-sm font-medium ${
+                      currentPage === number
+                        ? "bg-[oklch(47.3%_0.137_46.201)] text-white"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
                   >
-                    Détails
+                    {number}
                   </button>
-                  <button
-                    onClick={() => handleEditEvent(event)}
-                    className="text-amber-600 hover:text-amber-900 mr-3"
-                  >
-                    Modifier
-                  </button>
-                  {canDelete && (
-                    <button
-                      onClick={() => handleDeleteClick(event.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Supprimer
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                ))}
+                <button
+                  onClick={() => paginate(currentPage < totalPages ? currentPage + 1 : totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Suivant
+                </button>
+              </nav>
+            </div>
+          )}
+        </>
+      )}
 
       <Modal
         isOpen={showConfirmModal}
