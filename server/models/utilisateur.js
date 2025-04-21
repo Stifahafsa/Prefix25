@@ -53,6 +53,15 @@ const Utilisateur = sequelize.define(
       type: DataTypes.ENUM("actif", "inactif", "en_validation"),
       defaultValue: "en_validation",
     },
+    // Dans le modèle Utilisateur
+    resetPasswordToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    resetPasswordExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     tableName: "utilisateur",
