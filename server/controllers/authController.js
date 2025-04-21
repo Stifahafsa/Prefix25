@@ -39,7 +39,7 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       { id: utilisateur.id, role: utilisateur.role },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "10m" }
     );
 
     // Set HTTP-only cookie
@@ -47,7 +47,8 @@ export const login = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      // maxAge: 24 * 60 * 60 * 1000, 
+      maxAge: 10 * 60 * 1000,
     });
 
     res.json({

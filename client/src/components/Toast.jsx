@@ -10,7 +10,7 @@ export default function Toast({ message, type = "success", onClose }) {
   useEffect(() => {
     // Trigger entrance animation
     setTimeout(() => setVisible(true), 10);
-    
+
     // Add a small bounce effect after appearing
     setTimeout(() => {
       setBounce(true);
@@ -116,23 +116,27 @@ export default function Toast({ message, type = "success", onClose }) {
           </svg>
         )}
       </span>
-      
+
       {/* Message with fade-in effect */}
-      <span className={`transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}>
+      <span
+        className={`transition-opacity duration-500 ${
+          visible ? "opacity-100" : "opacity-0"
+        }`}
+      >
         {message}
       </span>
-      
+
       {/* Progress bar at the bottom */}
       <div className="absolute bottom-0 left-0 h-1 bg-white bg-opacity-30 w-full rounded-b-lg overflow-hidden">
-        <div 
-          className="h-full bg-white bg-opacity-60 rounded-bl-lg" 
-          style={{ 
-            width: '100%', 
-            animation: visible ? 'progress 5s linear forwards' : 'none'
+        <div
+          className="h-full bg-white bg-opacity-60 rounded-bl-lg"
+          style={{
+            width: "100%",
+            animation: visible ? "progress 5s linear forwards" : "none",
           }}
         />
       </div>
-      
+
       {/* Close button with hover effect */}
       <button
         onClick={handleClose}
@@ -151,13 +155,13 @@ export default function Toast({ message, type = "success", onClose }) {
           />
         </svg>
       </button>
-      
-      <style jsx global>{`
-        @keyframes progress {
-          0% { width: 100%; }
-          100% { width: 0%; }
-        }
-      `}</style>
+
+      <style>{`
+  @keyframes progress {
+    0% { width: 100%; }
+    100% { width: 0%; }
+  }
+`}</style>
     </div>
   );
 }
