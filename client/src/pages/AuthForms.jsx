@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import api from "../api";
@@ -10,6 +10,28 @@ export default function AuthForms() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const navigate = useNavigate();
+
+  // Fonction utilitaire pour vérifier l'expiration du token JWT
+  function isTokenExpired(token) {
+    if (!token) return true;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000 < Date.now();
+    } catch (e) {
+      return true;
+    }
+  }
+
+  useEffect(() => {
+    const token = Cookies.get("jwt");
+    if (token && isTokenExpired(token)) {
+      Cookies.remove("jwt");
+      Cookies.remove("userEmail");
+      Cookies.remove("userRole");
+      navigate("/login");
+    }
+  }, [navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[oklch(1_0_0)] p-4">
@@ -74,12 +96,17 @@ function LoginForm({ showPassword, setShowPassword, switchToRegister }) {
         });
 
         // Redirect based on user role
+        // Redirection selon le rôle de l'utilisateur
         if (utilisateur.role === "superadmin") {
           navigate("/dashboard/superadmin");
         } else if (utilisateur.role === "admin") {
           navigate("/dashboard/admin");
+        } else if (utilisateur.role === "talent") {
+          navigate("/TalentProfil");
+        } else if (utilisateur.role === "utilisateur") {
+          navigate("/UserProfil");
         } else {
-          navigate("/profile");
+          navigate("/"); // Redirection par défaut si le rôle n'est pas reconnu
         }
       } catch (err) {
         console.error("Login error:", err);

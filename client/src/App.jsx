@@ -19,6 +19,8 @@ import ConfigPage from "./pages/ConfigPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import UserProfil from "./pages/UserProfil";
+import TalentProfil from "./pages/TalentProfil";
 
 function App() {
   return (
@@ -272,9 +274,10 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+        <Route path="/UserProfil" element={<UserProfil />} />
+        <Route path="/TalentProfil" element={<TalentProfil />} />
         {/* Fallback route */}
-        <Route path="*" element={<Navigate to="/dashboard/admin" replace />} />
+        {/* <Route path="*" element={<Navigate to="/dashboard/admin" replace />} /> */}
       </Routes>
     </Router>
   );

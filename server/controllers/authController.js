@@ -172,11 +172,15 @@ export const login = async (req, res) => {
     // Set HTTP-only cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "developpement",
       sameSite: "strict",
       // maxAge: 24 * 60 * 60 * 1000, 
       maxAge: 10 * 60 * 1000,
     });
+
+    // Ajout de isTalent et adaptation du rôle si talent
+    const isTalent = utilisateur.is_talent === true;
+    const role = isTalent ? "talent" : utilisateur.role;
 
     res.json({
       token,
@@ -184,7 +188,8 @@ export const login = async (req, res) => {
         id: utilisateur.id,
         nom: utilisateur.nom,
         email: utilisateur.email,
-        role: utilisateur.role,
+        role: role,
+        isTalent: isTalent
       },
     });
   } catch (err) {
