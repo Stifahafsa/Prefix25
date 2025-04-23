@@ -1,5 +1,5 @@
 import express from "express"
-import { getReportsData } from "../controllers/dashboardContoller.js"
+import { getReportsData } from "../controllers/dashboardContoller.js";
 import { verifyToken } from "../middlewares/authMiddleware.js"
 
 const router = express.Router()
@@ -8,6 +8,6 @@ const router = express.Router()
 router.use(verifyToken)
 
 // Get reports data
-router.get("/", getReportsData)
+router.get("/", getReportsData);
 
 export default router

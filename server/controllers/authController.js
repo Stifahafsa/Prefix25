@@ -166,7 +166,7 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       { id: utilisateur.id, role: utilisateur.role },
       process.env.JWT_SECRET,
-      { expiresIn: "10m" }
+      { expiresIn: "1d" }
     );
 
     // Set HTTP-only cookie
@@ -174,8 +174,8 @@ export const login = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "developpement",
       sameSite: "strict",
-      // maxAge: 24 * 60 * 60 * 1000, 
-      maxAge: 10 * 60 * 1000,
+      maxAge: 24 * 60 * 60 * 1000, 
+      // maxAge: 10 * 60 * 1000,
     });
 
     // Ajout de isTalent et adaptation du rôle si talent
