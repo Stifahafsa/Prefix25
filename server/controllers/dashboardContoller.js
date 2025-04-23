@@ -3,39 +3,36 @@ import Reservation from "../models/reservation.js";
 import Utilisateur from "../models/utilisateur.js";
 import Commentaire from "../models/commentaire.js";
 import Espace from "../models/espace.js";
-import { Op, fn, col, literal, Sequelize } from "sequelize";
+import { Op, fn, col, literal } from "sequelize";
 
 // Get dashboard statistics
 export const getDashboardStats = async (req, res) => {
   try {
     // Counts
-    const reservationsCount = await Reservation.count();
-    const eventsCount = await Evenement.count();
-    const talentsCount = await Utilisateur.count({
-      where: { is_talent: true },
-    });
-    const usersCount = await Utilisateur.count();
-    const commentsCount = await Commentaire.count();
-    const spacesCount = await Espace.count();
+    const [reservationsCount, eventsCount, talentsCount, usersCount, commentsCount, spacesCount] = 
+      await Promise.all([
+        Reservation.count(),
+        Evenement.count(),
+        Utilisateur.count({ where: { is_talent: true } }),
+        Utilisateur.count(),
+        Commentaire.count(),
+        Espace.count()
+      ]);
 
     // Event status counts
-    const plannedEvents = await Evenement.count({
-      where: { status: "planifié" },
-    });
-    const confirmedEvents = await Evenement.count({
-      where: { status: "confirmé" },
-    });
-    const cancelledEvents = await Evenement.count({
-      where: { status: "annulé" },
-    });
+    const [plannedEvents, confirmedEvents, cancelledEvents] = await Promise.all([
+      Evenement.count({ where: { status: "planifié" } }),
+      Evenement.count({ where: { status: "confirmé" } }),
+      Evenement.count({ where: { status: "annulé" } })
+    ]);
 
     // Occupancy rate (average of all events)
-    const avgOccupancy = await Evenement.findOne({
-      attributes: [
-        [fn("AVG", col("taux_occupation")), "avgOccupancy"],
-      ],
-      raw: true,
+    const avgOccupancyResult = await Evenement.findOne({
+      attributes: [[fn('AVG', col('taux_occupation')), 'avgOccupancy']],
+      raw: true
     });
+
+    const avgOccupancy = avgOccupancyResult ? Math.round(avgOccupancyResult.avgOccupancy) : 0;
 
     res.json({
       reservations: reservationsCount,
@@ -47,11 +44,14 @@ export const getDashboardStats = async (req, res) => {
       plannedEvents,
       confirmedEvents,
       cancelledEvents,
-      avgOccupancy: avgOccupancy ? Math.round(avgOccupancy.avgOccupancy) : 0,
+      avgOccupancy
     });
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
-    res.status(500).json({ message: "Erreur lors de la récupération des statistiques" });
+    res.status(500).json({ 
+      message: "Erreur lors de la récupération des statistiques",
+      error: error.message 
+    });
   }
 };
 
@@ -62,10 +62,13 @@ export const getReportsData = async (req, res) => {
 
     // Handle different chart types
     if (chart === "users") {
-      const totalUsers = await Utilisateur.count();
-      const admins = await Utilisateur.count({ where: { role: "admin" } });
-      const superAdmins = await Utilisateur.count({ where: { role: "superadmin" } });
-      const talents = await Utilisateur.count({ where: { is_talent: true } });
+      const [totalUsers, admins, superAdmins, talents] = await Promise.all([
+        Utilisateur.count(),
+        Utilisateur.count({ where: { role: "admin" } }),
+        Utilisateur.count({ where: { role: "superadmin" } }),
+        Utilisateur.count({ where: { is_talent: true } })
+      ]);
+
       const regularUsers = totalUsers - admins - superAdmins - talents;
 
       return res.json({
@@ -75,64 +78,62 @@ export const getReportsData = async (req, res) => {
     }
 
     // Handle time-based reports
-    let groupBy, dateFormat, interval;
+    let dateFormat;
     switch (timeframe) {
       case "month":
-        groupBy = [fn("DATE_TRUNC", "month", col("createdAt"))];
         dateFormat = "%Y-%m";
-        interval = "1 month";
         break;
       case "quarter":
-        groupBy = [fn("DATE_TRUNC", "quarter", col("createdAt"))];
         dateFormat = "Q %Y";
-        interval = "3 months";
         break;
       case "year":
-        groupBy = [fn("DATE_TRUNC", "year", col("createdAt"))];
         dateFormat = "%Y";
-        interval = "1 year";
         break;
       default:
-        groupBy = [fn("DATE_TRUNC", "month", col("createdAt"))];
         dateFormat = "%Y-%m";
-        interval = "1 month";
     }
 
     // Get data for each metric
     const [reservations, events, users] = await Promise.all([
       Reservation.findAll({
         attributes: [
-          [fn("DATE_FORMAT", col("createdAt"), dateFormat)], "label",
-          [fn("COUNT", col("id")), "value"],
+          [fn("DATE_FORMAT", col("createdAt"), dateFormat), "label"],,
+          [fn("COUNT", col("id")), "value"]
         ],
         group: ["label"],
         order: [[col("label"), "ASC"]],
+        raw: true
       }),
       Evenement.findAll({
         attributes: [
-          [fn("DATE_FORMAT", col("date"), dateFormat)], "label",
-          [fn("COUNT", col("id")), "value"],
+          [fn("DATE_FORMAT", col("date"), dateFormat), "label"],
+          [fn("COUNT", col("id")), "value"]
         ],
         group: ["label"],
         order: [[col("label"), "ASC"]],
+        raw: true
       }),
       Utilisateur.findAll({
         attributes: [
-          [fn("DATE_FORMAT", col("createdAt"), dateFormat)], "label",
-          [fn("COUNT", col("id")), "value"],
+          [fn("DATE_FORMAT", col("createdAt"), dateFormat), "label"],
+          [fn("COUNT", col("id")), "value"]
         ],
         group: ["label"],
         order: [[col("label"), "ASC"]],
-      }),
+        raw: true
+      })
     ]);
 
     res.json({
       reservations: reservations.map(r => ({ label: r.label, value: r.value })),
       events: events.map(e => ({ label: e.label, value: e.value })),
-      users: users.map(u => ({ label: u.label, value: u.value })),
+      users: users.map(u => ({ label: u.label, value: u.value }))
     });
   } catch (error) {
     console.error("Error fetching reports data:", error);
-    res.status(500).json({ message: "Erreur lors de la récupération des rapports" });
+    res.status(500).json({ 
+      message: "Erreur lors de la récupération des rapports",
+      error: error.message 
+    });
   }
 };

@@ -23,6 +23,7 @@ export default function AuthForms() {
     }
   }
 
+  
   useEffect(() => {
     const token = Cookies.get("jwt");
     if (token && isTokenExpired(token)) {
