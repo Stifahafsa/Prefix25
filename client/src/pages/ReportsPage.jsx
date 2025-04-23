@@ -26,11 +26,11 @@ export default function ReportsPage() {
       } catch (error) {
         console.error("Error fetching stats:", error);
         setStats({
-          userRoles: { utilisateurs: 42, admins: 3, superadmins: 1, talents: 15 },
+          userRoles: { utilisateurs: 0, admins: 0, superadmins:0 , talents: 0 },
           monthlyData: [
-            { month: 'Jan', reservations: 12, events: 5 },
-            { month: 'Fév', reservations: 19, events: 8 },
-            { month: 'Mar', reservations: 15, events: 6 },
+            { month: 'Jan', reservations: 0, events: 0 },
+            { month: 'Fév', reservations:0, events: 0},
+            { month: 'Mar', reservations: 0, events: 0 },
           ]
         });
       }

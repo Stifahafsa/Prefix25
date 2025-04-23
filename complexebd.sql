@@ -173,7 +173,7 @@ CREATE TABLE `utilisateur` (
   `nom` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `role` enum('utilisateur','admin','superadmin') DEFAULT 'utilisateur',
+  `role` enum('utilisateur','admin','superadmin','talent') DEFAULT 'utilisateur',
   `date_inscription` datetime DEFAULT current_timestamp(),
   `is_talent` tinyint(1) DEFAULT 0,
   `domaine_artiste` varchar(255) DEFAULT NULL,

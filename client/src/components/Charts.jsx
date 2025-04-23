@@ -26,74 +26,97 @@ ChartJS.register(
   Legend
 );
 
+// Palette générée à partir de la couleur de base
+const COLOR_PALETTE = {
+  primary: "oklch(47.3% 0.137 46.201)", // Couleur de base
+  secondary: "oklch(55% 0.12 46.2)", // Version plus claire
+  tertiary: "oklch(40% 0.15 46.2)", // Version plus sombre
+  complementary: "oklch(47% 0.13 226.2)", // Couleur complémentaire
+};
+
 export default function Charts({ stats }) {
   // Configuration du graphique circulaire
   const pieData = {
     labels: ["Utilisateurs", "Talents", "Admins", "Super Admins"],
-    datasets: [{
-      data: [
-        stats.userRoles.utilisateurs,
-        stats.userRoles.talents,
-        stats.userRoles.admins,
-        stats.userRoles.superadmins
-      ],
-      backgroundColor: ["#36A2EB", "#FFCE56", "#FF6384", "#4BC0C0"],
-      hoverBackgroundColor: ["#36A2EB", "#FFCE56", "#FF6384", "#4BC0C0"]
-    }]
+    datasets: [
+      {
+        data: [
+          stats.userRoles.utilisateurs,
+          stats.userRoles.talents,
+          stats.userRoles.admins,
+          stats.userRoles.superadmins,
+        ],
+        backgroundColor: [
+          COLOR_PALETTE.primary,
+          COLOR_PALETTE.secondary,
+          COLOR_PALETTE.tertiary,
+          COLOR_PALETTE.complementary,
+        ],
+        hoverBackgroundColor: [
+          "oklch(50% 0.15 46.2)",
+          "oklch(58% 0.13 46.2)",
+          "oklch(43% 0.16 46.2)",
+          "oklch(50% 0.14 226.2)",
+        ],
+      },
+    ],
   };
 
   // Configuration du graphique linéaire
   const lineData = {
-    labels: stats.monthlyData.map(d => d.month),
+    labels: stats.monthlyData.map((d) => d.month),
     datasets: [
       {
         label: "Réservations",
-        data: stats.monthlyData.map(d => d.reservations),
-        borderColor: "#36A2EB",
-        tension: 0.4
+        data: stats.monthlyData.map((d) => d.reservations),
+        borderColor: COLOR_PALETTE.primary,
+        tension: 0.4,
+        borderWidth: 2,
       },
       {
         label: "Événements",
-        data: stats.monthlyData.map(d => d.events),
-        borderColor: "#FFCE56",
-        tension: 0.4
-      }
-    ]
+        data: stats.monthlyData.map((d) => d.events),
+        borderColor: COLOR_PALETTE.complementary,
+        tension: 0.4,
+        borderWidth: 2,
+      },
+    ],
   };
 
   // Configuration du graphique à barres
   const barData = {
-    labels: stats.monthlyData.map(d => d.month),
+    labels: stats.monthlyData.map((d) => d.month),
     datasets: [
       {
         label: "Réservations",
-        data: stats.monthlyData.map(d => d.reservations),
-        backgroundColor: "#36A2EB",
-        barThickness: 30
+        data: stats.monthlyData.map((d) => d.reservations),
+        backgroundColor: COLOR_PALETTE.primary,
+        barThickness: 30,
       },
       {
         label: "Événements",
-        data: stats.monthlyData.map(d => d.events),
-        backgroundColor: "#FFCE56",
-        barThickness: 30
-      }
-    ]
+        data: stats.monthlyData.map((d) => d.events),
+        backgroundColor: COLOR_PALETTE.complementary,
+        barThickness: 30,
+      },
+    ],
   };
-
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Graphique circulaire */}
         <div className="bg-white p-6 rounded-xl shadow-md">
-          <h3 className="text-lg font-semibold mb-4">Répartition des utilisateurs</h3>
+          <h3 className="text-lg font-semibold mb-4">
+            Répartition des utilisateurs
+          </h3>
           <div className="h-80">
-            <Pie 
+            <Pie
               data={pieData}
-              options={{ 
+              options={{
                 maintainAspectRatio: false,
                 plugins: {
-                  legend: { position: 'bottom' }
-                }
+                  legend: { position: "bottom" },
+                },
               }}
             />
           </div>
@@ -109,8 +132,8 @@ export default function Charts({ stats }) {
                 maintainAspectRatio: false,
                 responsive: true,
                 scales: {
-                  y: { beginAtZero: true }
-                }
+                  y: { beginAtZero: true },
+                },
               }}
             />
           </div>
@@ -127,8 +150,8 @@ export default function Charts({ stats }) {
               maintainAspectRatio: false,
               responsive: true,
               scales: {
-                y: { beginAtZero: true }
-              }
+                y: { beginAtZero: true },
+              },
             }}
           />
         </div>
