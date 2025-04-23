@@ -30,7 +30,7 @@ function App() {
         <Route path="/login" element={<AuthForms />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/" element={<Navigate to="/dashboard/admin" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* Admin routes */}
         <Route
@@ -277,7 +277,7 @@ function App() {
         <Route path="/UserProfil" element={<UserProfil />} />
         <Route path="/TalentProfil" element={<TalentProfil />} />
         {/* Fallback route */}
-        {/* <Route path="*" element={<Navigate to="/dashboard/admin" replace />} /> */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
