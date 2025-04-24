@@ -103,7 +103,16 @@ export default function UsersTable({ limit }) {
     setCurrentPage(1); // Reset to first page after adding/editing
   };
 
-  const getRoleBadge = (role) => {
+  const getRoleBadge = (user) => {
+    if (user.is_talent) {
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          Talent
+        </span>
+      );
+    }
+
+    const role = user.role;
     const roleMap = {
       utilisateur: "bg-blue-100 text-blue-800",
       admin: "bg-purple-100 text-purple-800",
@@ -235,7 +244,7 @@ export default function UsersTable({ limit }) {
                       {user.email}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getRoleBadge(user.role)}
+                      {getRoleBadge(user)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
