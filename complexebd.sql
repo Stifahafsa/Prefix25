@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 22, 2025 at 01:38 AM
+-- Generation Time: Apr 24, 2025 at 05:53 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -71,7 +71,8 @@ CREATE TABLE `espace` (
 
 INSERT INTO `espace` (`id`, `nom`, `type`, `sous_type`, `capacite`, `description`, `image_url`) VALUES
 (1, 'Grand Théâtre', 'salle', 'théâtre', 200, NULL, NULL),
-(2, 'Studio Photo', 'atelier', 'photographie', 15, NULL, NULL);
+(2, 'Studio Photo', 'atelier', 'photographie', 15, NULL, NULL),
+(3, 'cozina', 'atelier', 'photographie', 20, 'bla bla bla', '');
 
 -- --------------------------------------------------------
 
@@ -102,7 +103,11 @@ INSERT INTO `evenement` (`id`, `titre`, `description`, `date_debut`, `date_fin`,
 (2, 'Atelier Photo', NULL, '2025-05-10 14:00:00', '2025-05-10 17:00:00', 2, 'atelier', NULL, 1, 0.00, 'planifie'),
 (3, 'Conférence Art Moderne', 'Discussion sur les tendances artistiques contemporaines', '2025-07-10 18:00:00', '2025-07-10 20:30:00', 1, 'conference', 'conf_art.jpg', 1, 50.00, 'confirme'),
 (4, 'Atelier Peinture', 'Initiation à la peinture à l\'huile', '2025-08-05 14:00:00', '2025-08-05 17:00:00', 2, 'atelier', 'peinture.jpg', 1, 120.00, 'planifie'),
-(5, 'Spectacle de Danse', 'Performance de danse contemporaine', '2025-09-12 20:00:00', '2025-09-12 22:00:00', 1, 'spectacle', 'danse.jpg', 1, 80.00, 'confirme');
+(5, 'Spectacle de Danse', 'Performance de danse contemporaine', '2025-09-12 20:00:00', '2025-09-12 22:00:00', 1, 'spectacle', 'danse.jpg', 1, 80.00, 'confirme'),
+(14, 'xxxxxxxxxxxxxxxxxxxxxxxxxx', ' mbdcjabj', '2025-04-23 18:10:00', '2025-04-23 20:10:00', 1, 'spectacle', NULL, 1, 30.00, 'planifie'),
+(15, 'yyyyyyyyyyyyyyyyyyy', 'nSKCDNkdj', '2025-04-23 18:11:00', '2025-04-23 20:11:00', 1, 'spectacle', NULL, 1, 0.00, 'planifie'),
+(16, 'Foire Artisanalex', '', '2025-04-23 18:40:00', '2025-04-23 20:40:00', 1, 'conference', NULL, 1, 0.00, 'planifie'),
+(17, 'cozina', 'bla bla bal', '2025-09-24 22:55:00', '2025-09-26 00:55:00', 2, 'exposition', NULL, 1, 39.00, 'planifie');
 
 -- --------------------------------------------------------
 
@@ -159,8 +164,7 @@ INSERT INTO `reservation` (`id`, `evenement_id`, `utilisateur_id`, `date_reserva
 (7, 5, 2, '2025-07-15 12:00:00', 4, 'confirme'),
 (8, 5, 3, '2025-07-18 15:20:00', 2, 'confirme'),
 (9, 2, 1, '2025-04-30 22:25:00', 20, 'en_attente'),
-(10, 4, 4, '2025-04-21 22:25:00', 25, 'en_attente'),
-(11, 4, 2, '2025-04-21 22:25:00', 20, 'en_attente');
+(10, 4, 4, '2025-04-21 22:25:00', 25, 'en_attente');
 
 -- --------------------------------------------------------
 
@@ -173,7 +177,7 @@ CREATE TABLE `utilisateur` (
   `nom` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `role` enum('utilisateur','admin','superadmin','talent') DEFAULT 'utilisateur',
+  `role` enum('utilisateur','admin','superadmin') DEFAULT 'utilisateur',
   `date_inscription` datetime DEFAULT current_timestamp(),
   `is_talent` tinyint(1) DEFAULT 0,
   `domaine_artiste` varchar(255) DEFAULT NULL,
@@ -190,9 +194,13 @@ CREATE TABLE `utilisateur` (
 
 INSERT INTO `utilisateur` (`id`, `nom`, `email`, `password`, `role`, `date_inscription`, `is_talent`, `domaine_artiste`, `description_talent`, `image_profil`, `statut_talent`, `resetPasswordToken`, `resetPasswordExpires`) VALUES
 (1, 'Admin', 'admin@culture.ma', '$2y$10$TXdpYnOAfb04O9rVaGUzm.sDaQDFsL/CiVuz/B5eeilqCPomfeg8S', 'superadmin', '2025-04-19 00:37:05', 0, NULL, NULL, NULL, 'en_validation', NULL, NULL),
-(2, 'Fatima Zahra', 'fatima@artiste.ma', '$2y$10$...', 'utilisateur', '2025-04-19 00:37:05', 1, 'Musique traditionnelle', 'Chanteuse et compositrice', NULL, 'en_validation', NULL, NULL),
-(3, 'Ahmed Photographe', 'ahmed@photo.ma', '$2y$10$...', 'utilisateur', '2025-04-19 00:37:05', 1, 'Photographie', 'Spécialiste paysages du désert', NULL, 'en_validation', NULL, NULL),
-(4, 'soufiane', 'soufiane.oulahcen9999@gmail.com', '$2b$10$cwCqatA6xBQxZYHlUPmiO.eTxOKy.PGrUc2inZmqeO78CUZ9SxvFi', 'admin', '2025-04-19 00:37:05', 0, '', '', NULL, '', NULL, NULL);
+(2, 'Fatima Zahra', 'fatima@artiste.ma', '$2y$10$mdEFice0TdjqvQsB5ev9AeMAydSQWYclXA.eNzZ4uttGrTg3NBclK', 'utilisateur', '2025-04-19 00:37:05', 1, 'Musique traditionnelle', 'Chanteuse et compositrice', NULL, 'en_validation', NULL, NULL),
+(3, 'Ahmed Photographe', 'ahmed@photo.ma', '$2y$10$mdEFice0TdjqvQsB5ev9AeMAydSQWYclXA.eNzZ4uttGrTg3NBclK', 'utilisateur', '2025-04-19 00:37:05', 1, 'Photographie', 'Spécialiste paysages du désert', NULL, 'en_validation', NULL, NULL),
+(4, 'soufiane', 'soufiane.oulahcen9999@gmail.com', '$2b$10$KBYz.PaWHsaqRdgPOxRTEul3DKLi6NxXuDPZVfVfhvgAsiF0bog1C', 'admin', '2025-04-19 00:37:05', 0, '', '', NULL, '', NULL, NULL),
+(5, 'meryem', 'meryem@gmail.com', '$2b$10$pj1nzSJsSOj1eSIIjZwRq.2yCokQvqlZU/6K3XMsfhwRo4c/pQbma', 'utilisateur', '2025-04-22 00:14:13', 0, NULL, NULL, NULL, 'en_validation', NULL, NULL),
+(9, 'meryem', 'mdsckjsdbncjkds@gmail.com', '1234567890', 'utilisateur', '2025-04-23 21:31:11', 0, '', '', NULL, 'en_validation', NULL, NULL),
+(11, 'hassan ', 'hassan@gmail.com', 'defaultPassword', 'utilisateur', '2025-04-24 01:08:32', 1, 'musicien', '', NULL, 'en_validation', NULL, NULL),
+(12, 'anas', 'anas@gmail.com', '1234567890', 'utilisateur', '2025-04-24 01:19:36', 1, NULL, NULL, NULL, 'en_validation', NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -251,19 +259,19 @@ ALTER TABLE `utilisateur`
 -- AUTO_INCREMENT for table `commentaire`
 --
 ALTER TABLE `commentaire`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `espace`
 --
 ALTER TABLE `espace`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `evenement`
 --
 ALTER TABLE `evenement`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `participation_artiste`
@@ -281,7 +289,7 @@ ALTER TABLE `reservation`
 -- AUTO_INCREMENT for table `utilisateur`
 --
 ALTER TABLE `utilisateur`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- Constraints for dumped tables
