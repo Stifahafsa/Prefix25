@@ -39,12 +39,12 @@ export default function EventsTable({ limit }) {
         api.get("/evenements?_expand=espace"),
         api.get("/espaces"),
       ]);
-      
-      const eventsWithSpaceNames = eventsRes.data.map(event => ({
+
+      const eventsWithSpaceNames = eventsRes.data.map((event) => ({
         ...event,
-        espace_nom: event.espace?.nom || `Espace #${event.espace_id}`
+        espace_nom: event.espace?.nom || `Espace #${event.espace_id}`,
       }));
-      
+
       setEvents(eventsWithSpaceNames);
       setSpaces(spacesRes.data);
       setError(null);
@@ -52,7 +52,10 @@ export default function EventsTable({ limit }) {
     } catch (err) {
       console.error("Error fetching data:", err);
       setError("Impossible de charger les données");
-      setToast({ message: "Erreur lors du chargement des données", type: "error" });
+      setToast({
+        message: "Erreur lors du chargement des données",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -100,12 +103,12 @@ export default function EventsTable({ limit }) {
       setToast({ message: "Erreur lors de la suppression", type: "error" });
     }
   };
-  
+
   const handleAddEvent = () => {
     setEditingEvent(null);
     setShowEventForm(true);
   };
-  
+
   const handleEditEvent = (event) => {
     setEditingEvent(event);
     setShowEventForm(true);
@@ -232,7 +235,6 @@ export default function EventsTable({ limit }) {
       {filteredEvents.length === 0 ? (
         <div className="text-center py-8 bg-white rounded-lg shadow">
           <p className="text-gray-500 mb-4">Aucun événement trouvé</p>
-    
         </div>
       ) : (
         <>
@@ -277,20 +279,64 @@ export default function EventsTable({ limit }) {
                         onClick={() => handleViewEvent(event)}
                         className="text-[oklch(47.3%_0.137_46.201)] hover:text-[oklch(50%_0.137_46.201)] mr-3"
                       >
-                        Détails
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="w-5 h-5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
                       </button>
                       <button
                         onClick={() => handleEditEvent(event)}
                         className="text-amber-600 hover:text-amber-900 mr-3"
                       >
-                        Modifier
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="w-5 h-5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                          />
+                        </svg>
                       </button>
                       {canDelete && (
                         <button
                           onClick={() => handleDeleteClick(event.id)}
                           className="text-red-600 hover:text-red-900"
                         >
-                          Supprimer
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                            className="w-5 h-5"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                            />
+                          </svg>
                         </button>
                       )}
                     </td>
@@ -305,27 +351,35 @@ export default function EventsTable({ limit }) {
             <div className="flex justify-center mt-4">
               <nav className="inline-flex rounded-md shadow">
                 <button
-                  onClick={() => paginate(currentPage > 1 ? currentPage - 1 : 1)}
+                  onClick={() =>
+                    paginate(currentPage > 1 ? currentPage - 1 : 1)
+                  }
                   disabled={currentPage === 1}
                   className="px-3 py-1 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
                   Précédent
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
-                  <button
-                    key={number}
-                    onClick={() => paginate(number)}
-                    className={`px-3 py-1 border-t border-b border-gray-300 bg-white text-sm font-medium ${
-                      currentPage === number
-                        ? "bg-[oklch(47.3%_0.137_46.201)] text-white"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    {number}
-                  </button>
-                ))}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (number) => (
+                    <button
+                      key={number}
+                      onClick={() => paginate(number)}
+                      className={`px-3 py-1 border-t border-b border-gray-300 bg-white text-sm font-medium ${
+                        currentPage === number
+                          ? "bg-[oklch(47.3%_0.137_46.201)] text-white"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      {number}
+                    </button>
+                  )
+                )}
                 <button
-                  onClick={() => paginate(currentPage < totalPages ? currentPage + 1 : totalPages)}
+                  onClick={() =>
+                    paginate(
+                      currentPage < totalPages ? currentPage + 1 : totalPages
+                    )
+                  }
                   disabled={currentPage === totalPages}
                   className="px-3 py-1 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
@@ -383,7 +437,13 @@ export default function EventsTable({ limit }) {
         }}
       />
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </>
   );
 }
