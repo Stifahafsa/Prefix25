@@ -32,24 +32,33 @@ export default function DashboardAdmin() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        // Try to fetch stats from your API
-        // If this endpoint doesn't exist yet, it will fall back to mock data
         const statsResponse = await api.get("/dashboard/stats");
-        if (statsResponse.data) {
+        const summaryResponse = await api.get("/dashboard/summary");
+
+        if (statsResponse.data && summaryResponse.data) {
           setStats([
             {
               label: "Réservations",
-              value: statsResponse.data.reservations || 0,
+              value: summaryResponse.data.reservations || 0,
             },
-            { label: "Événements", value: statsResponse.data.events || 0 },
-            { label: "Talents", value: statsResponse.data.talents || 0 },
-            { label: "Utilisateurs", value: statsResponse.data.users || 0 },
+            {
+              label: "Événements",
+              value: summaryResponse.data.events || 0,
+            },
+            {
+              label: "Talents",
+              value: statsResponse.data.userRoles.talents || 0,
+            },
+            {
+              label: "Utilisateurs",
+              value:
+                statsResponse.data.userRoles.utilisateurs +
+                  statsResponse.data.userRoles.talents +
+                  statsResponse.data.userRoles.admins +
+                  statsResponse.data.userRoles.superadmins || 0,
+            },
           ]);
         }
-        setToast({
-          message: "Données du tableau de bord chargées avec succès",
-          type: "success",
-        });
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         // Use mock data for development
@@ -66,7 +75,6 @@ export default function DashboardAdmin() {
 
     fetchDashboardData();
   }, []);
-
 
   // Function to handle tab change
   const handleTabChange = (tab) => {
@@ -372,7 +380,6 @@ export default function DashboardAdmin() {
                       <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
                         Gestion des talents
                       </h2>
-                     
                     </div>
                     <TalentsTable />
                   </div>
@@ -384,7 +391,6 @@ export default function DashboardAdmin() {
                       <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
                         Gestion des utilisateurs
                       </h2>
-                     
                     </div>
                     <UsersTable />
                   </div>
@@ -396,7 +402,6 @@ export default function DashboardAdmin() {
                       <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
                         Gestion des espaces
                       </h2>
-                      
                     </div>
                     <EspacesTable />
                   </div>
@@ -408,12 +413,12 @@ export default function DashboardAdmin() {
                       <h2 className="text-lg font-semibold text-[oklch(0.145_0_0)]">
                         Gestion des commentaires
                       </h2>
-                      <button
+                      {/* <button
                         onClick={() => navigate("/commentaires/new")}
                         className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg shadow hover:bg-[oklch(50%_0.137_46.201)] transition-colors"
                       >
                         Ajouter un commentaire
-                      </button>
+                      </button> */}
                     </div>
                     <CommentairesTable />
                   </div>

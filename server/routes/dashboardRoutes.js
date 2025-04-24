@@ -1,5 +1,5 @@
 import express from "express";
-import { getDashboardStats, getReportsData } from "../controllers/dashboardContoller.js";
+import { getDashboardStats, getReportsData , getSummaryData } from "../controllers/dashboardContoller.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -12,5 +12,6 @@ router.get("/stats", getDashboardStats);
 
 // Reports data route
 router.get("/reports", getReportsData);
+router.get("/summary", getSummaryData);
 
 export default router;

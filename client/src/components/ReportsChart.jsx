@@ -10,23 +10,32 @@ export default function ReportsChart() {
   useEffect(() => {
     const fetchPieData = async () => {
       try {
-        const response = await api.get("/reports?chart=users");
+        const response = await api.get("/dashboard/summary?chart=users");
+
+        // Ajuster l'ordre des données pour correspondre aux couleurs
+        const orderedValues = [
+          response.data.values[0], // Utilisateurs
+          response.data.values[2], // Admins
+          response.data.values[3], // Super Admins
+          response.data.values[1], // Talents
+        ];
+
         setPieData({
-          labels: response.data.labels,
+          labels: ["Utilisateurs", "Admins", "Super Admins", "Talents"],
           datasets: [
             {
-              data: response.data.values,
+              data: orderedValues,
               backgroundColor: [
-                "#36A2EB", // Bleu pour utilisateurs
-                "#FF6384", // Rose pour admins
-                "#FFCE56", // Jaune pour talents
-                "#4BC0C0", // Turquoise pour super admins
+                "#36A2EB", // Utilisateurs
+                "#FF6384", // Admins
+                "#4BC0C0", // Super Admins
+                "#FFCE56", // Talents
               ],
               hoverBackgroundColor: [
                 "#36A2EB",
                 "#FF6384",
-                "#FFCE56",
                 "#4BC0C0",
+                "#FFCE56",
               ],
             },
           ],
@@ -39,12 +48,7 @@ export default function ReportsChart() {
           datasets: [
             {
               data: [120, 5, 2, 18],
-              backgroundColor: [
-                "#36A2EB",
-                "#FF6384",
-                "#FFCE56",
-                "#4BC0C0",
-              ],
+              backgroundColor: ["#36A2EB", "#FF6384", "#FFCE56", "#4BC0C0"],
               hoverBackgroundColor: [
                 "#36A2EB",
                 "#FF6384",
@@ -85,16 +89,19 @@ export default function ReportsChart() {
               },
               tooltip: {
                 callbacks: {
-                  label: function(context) {
-                    const label = context.label || '';
+                  label: function (context) {
+                    const label = context.label || "";
                     const value = context.raw || 0;
-                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const total = context.dataset.data.reduce(
+                      (a, b) => a + b,
+                      0
+                    );
                     const percentage = Math.round((value / total) * 100);
                     return `${label}: ${value} (${percentage}%)`;
-                  }
-                }
-              }
-            }
+                  },
+                },
+              },
+            },
           }}
         />
       </div>

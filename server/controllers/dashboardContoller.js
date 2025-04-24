@@ -5,7 +5,45 @@ import Utilisateur from "../models/utilisateur.js";
 import Commentaire from "../models/commentaire.js";
 import Espace from "../models/espace.js";
 import { fn, col } from "sequelize";
+export const getSummaryData = async (req, res) => {
+  try {
+    // Gestion du cas particulier pour le graphique utilisateurs
+    if (req.query.chart === "users") {
+      const [utilisateurs, talents, admins, superadmins] = await Promise.all([
+        Utilisateur.count({ where: { role: "utilisateur", is_talent: false } }),
+        Utilisateur.count({ where: { role: "utilisateur", is_talent: true } }),
+        Utilisateur.count({ where: { role: "admin" } }),
+        Utilisateur.count({ where: { role: "superadmin" } }),
+      ]);
 
+      return res.json({
+        labels: ["Utilisateurs", "Admins", "Super Admins", "Talents"],
+        values: [utilisateurs, admins, superadmins, talents],
+      });
+    }
+
+    // Logique normale pour les autres données
+    const reservations = await Reservation.count();
+    const events = await Evenement.count();
+    const users = await Utilisateur.count();
+    const comments = await Commentaire.count();
+    const spaces = await Espace.count();
+
+    res.json({
+      reservations,
+      events,
+      users,
+      comments,
+      spaces,
+    });
+  } catch (error) {
+    console.error("Error fetching summary data:", error);
+    res.status(500).json({
+      message: "Erreur lors de la récupération des données synthétiques",
+      error: error.message,
+    });
+  }
+};
 export const getDashboardStats = async (req, res) => {
   try {
     // Correction de l'ordre des requêtes
