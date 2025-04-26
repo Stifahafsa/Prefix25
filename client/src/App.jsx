@@ -32,11 +32,31 @@ function App() {
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
 
+        {/* Routes utilisateur */}
+        <Route
+          path="/UserProfil"
+          element={
+            <ProtectedRoute allowedRoles={['utilisateur', 'admin', 'superadmin']}>
+              <UserProfil />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Routes talent */}
+        <Route
+          path="/TalentProfil"
+          element={
+            <ProtectedRoute allowedRoles={['talent', 'admin', 'superadmin']}>
+              <TalentProfil />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Admin routes */}
         <Route
           path="/dashboard/admin"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
               <DashboardAdmin />
             </ProtectedRoute>
           }
@@ -44,7 +64,7 @@ function App() {
         <Route
           path="/dashboard/reservations"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
               <ReservationsPage />
             </ProtectedRoute>
           }
@@ -52,7 +72,7 @@ function App() {
         <Route
           path="/dashboard/events"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
               <EventsPage />
             </ProtectedRoute>
           }
@@ -60,7 +80,7 @@ function App() {
         <Route
           path="/dashboard/talents"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
               <TalentsPage />
             </ProtectedRoute>
           }
@@ -68,7 +88,7 @@ function App() {
         <Route
           path="/dashboard/users"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
               <UsersPage />
             </ProtectedRoute>
           }
@@ -76,7 +96,7 @@ function App() {
         <Route
           path="/dashboard/espaces"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
               <EspacesPage />
             </ProtectedRoute>
           }
@@ -84,7 +104,7 @@ function App() {
         <Route
           path="/dashboard/commentaires"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
               <CommentairesPage />
             </ProtectedRoute>
           }
@@ -92,7 +112,7 @@ function App() {
         <Route
           path="/dashboard/reports"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
               <ReportsPage />
             </ProtectedRoute>
           }
@@ -100,7 +120,7 @@ function App() {
         <Route
           path="/dashboard/social"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
               <SocialPage />
             </ProtectedRoute>
           }
@@ -110,7 +130,7 @@ function App() {
         <Route
           path="/dashboard/superadmin"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <DashboardSuperAdmin />
             </ProtectedRoute>
           }
@@ -118,7 +138,7 @@ function App() {
         <Route
           path="/dashboard/config"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <ConfigPage />
             </ProtectedRoute>
           }
@@ -128,7 +148,7 @@ function App() {
         <Route
           path="/events/:id"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
               <EventsPage />
             </ProtectedRoute>
           }
