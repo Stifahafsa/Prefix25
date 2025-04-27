@@ -8,6 +8,7 @@ import espaceRoutes from "./routes/espaceRoutes.js";
 import utilisateurRoutes from "./routes/utilisateurRoutes.js";
 import sequelize from "./config/database.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import notificationRoutes from './routes/notificationRoutes.js';
 const PORT = 3000;
 const app = express();
 // dotenv.config()
@@ -28,7 +29,7 @@ app.use("/api/commentaires", commentaireRoutes); // Use commentaire routes
 app.use("/api/espaces", espaceRoutes); // Use espace routes
 app.use("/api/utilisateurs", utilisateurRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-// Test de connexion à la base de données
+app.use("/api/notification", notificationRoutes);// Test de connexion à la base de données
 sequelize
   .authenticate()
   .then(() => {
