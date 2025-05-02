@@ -1,35 +1,196 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api";
 import Cookies from "js-cookie";
 import Toast from "../components/Toast";
+import { 
+  Bell, Lock, LogOut, User, Camera, Edit2, Key, Shield, 
+  Briefcase, Award, Clock, Link as LinkIcon, FileText 
+} from 'lucide-react';
 
-export default function TalentProfil() {
+export default function TalentProfile() {
+  const navigate = useNavigate();
   const [talent, setTalent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [formData, setFormData] = useState({
+    nom: "",
+    email: "",
+    telephone: "",
+    adresse: "",
+    domaine_artiste: "",
+    description_talent: "",
+    specialite: "",
+    annees_experience: "",
+    competences: "",
+    disponibilites: "",
+    reseaux_sociaux: {},
+    experience: [],
+    cv: null,
+    image_profil: null,
+  });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [toast, setToast] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [cvPreview, setCvPreview] = useState(null);
+  const [activeTab, setActiveTab] = useState("profile");
   const userEmail = Cookies.get("userEmail");
 
   useEffect(() => {
-    fetchTalent();
+    const fetchTalentData = async () => {
+      try {
+        const response = await api.get(`/utilisateurs?email=${userEmail}`);
+        const user = response.data.find(u => u.is_talent);
+        
+        if (!user) throw new Error("Talent non trouvé");
+
+        setTalent(user);
+        setFormData({
+          nom: user.nom || "",
+          email: user.email || "",
+          telephone: user.telephone || "",
+          adresse: user.adresse || "",
+          domaine_artiste: user.domaine_artiste || "",
+          description_talent: user.description_talent || "",
+          specialite: user.specialite || "",
+          annees_experience: user.annees_experience || "",
+          competences: user.competences || "",
+          disponibilites: user.disponibilites || "",
+          reseaux_sociaux: user.reseaux_sociaux || {},
+          experience: user.experience || [],
+          cv: null,
+          image_profil: null,
+        });
+      } catch (error) {
+        setToast({ message: "Erreur lors de la récupération des données", type: "error" });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTalentData();
   }, [userEmail]);
 
-  const fetchTalent = async () => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({ ...prev, image_profil: file }));
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCvChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({ ...prev, cv: file }));
+      const reader = new FileReader();
+      reader.onloadend = () => setCvPreview(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSocialMediaChange = (platform, value) => {
+    setFormData(prev => ({
+      ...prev,
+      reseaux_sociaux: { ...prev.reseaux_sociaux, [platform]: value }
+    }));
+  };
+
+  const handleExperienceChange = (index, field, value) => {
+    const newExperience = [...formData.experience];
+    newExperience[index] = { ...newExperience[index], [field]: value };
+    setFormData(prev => ({ ...prev, experience: newExperience }));
+  };
+
+  const addExperience = () => {
+    setFormData(prev => ({
+      ...prev,
+      experience: [...prev.experience, { poste: "", entreprise: "", duree: "", description: "" }]
+    }));
+  };
+
+  const removeExperience = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      experience: prev.experience.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
     try {
-      setLoading(true);
-      const response = await api.get(`/utilisateurs?email=${userEmail}`);
-      const user = response.data.find(u => u.is_talent);
+      const formDataToSend = new FormData();
       
-      if (user) {
-        setTalent(user);
-      } else {
-        setError("Aucun profil talent trouvé pour cet utilisateur.");
+      // Append all form data
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== null && key !== 'image_profil' && key !== 'cv') {
+          if (key === 'reseaux_sociaux' || key === 'experience') {
+            formDataToSend.append(key, JSON.stringify(formData[key]));
+          } else {
+            formDataToSend.append(key, formData[key]);
+          }
+        }
+      });
+
+      // Append files if they exist
+      if (formData.image_profil instanceof File) {
+        formDataToSend.append('image_profil', formData.image_profil);
       }
-    } catch (err) {
-      console.error("Erreur lors du chargement du profil talent:", err);
-      setError("Erreur lors du chargement du profil talent.");
+      if (formData.cv instanceof File) {
+        formDataToSend.append('cv', formData.cv);
+      }
+
+      const response = await talentService.updateProfile(formDataToSend);
+      
+      setToast({ message: "Profil mis à jour avec succès!", type: "success" });
+      setEditing(false);
+      setTalent(response.talent);
+    } catch (error) {
+      setToast({ message: error.message || "Erreur lors de la mise à jour", type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setToast({ message: "Les mots de passe ne correspondent pas", type: "error" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await talentService.updatePassword(
+        passwordData.currentPassword,
+        passwordData.newPassword
+      );
+
+      setToast({ message: "Mot de passe mis à jour!", type: "success" });
+      setShowPasswordForm(false);
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (error) {
       setToast({
-        message: "Erreur lors de la récupération des données du talent",
+        message: error.message || "Erreur lors de la mise à jour",
         type: "error",
       });
     } finally {
@@ -37,18 +198,16 @@ export default function TalentProfil() {
     }
   };
 
-  if (loading) {
+  const handleLogout = () => {
+    Cookies.remove("userEmail");
+    Cookies.remove("authToken");
+    navigate("/login");
+  };
+
+  if (loading && !talent) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[oklch(47.3%_0.137_46.201)]"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-red-600 bg-red-100 px-4 py-3 rounded-lg">{error}</div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
@@ -56,166 +215,623 @@ export default function TalentProfil() {
   if (!talent) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <p className="text-gray-700">Aucun profil talent trouvé.</p>
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Erreur</h2>
+          <p className="mb-6">Aucun profil talent trouvé.</p>
+          <button
+            onClick={() => navigate("/")}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Retour à l'accueil
+          </button>
         </div>
       </div>
     );
   }
 
+  const socialMediaPlatforms = [
+    { id: 'facebook', name: 'Facebook', icon: <span className="text-blue-600">f</span> },
+    { id: 'instagram', name: 'Instagram', icon: <span className="text-pink-600">📸</span> },
+    { id: 'twitter', name: 'Twitter', icon: <span className="text-blue-400">𝕏</span> },
+    { id: 'linkedin', name: 'LinkedIn', icon: <span className="text-blue-700">in</span> },
+  ];
+
+  const navItems = [
+    { id: "profile", icon: User, label: "Profil" },
+    { id: "security", icon: Lock, label: "Sécurité" },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
-          {/* Profile header with image */}
-          <div className="relative bg-gradient-to-r from-[oklch(47.3%_0.137_46.201)] to-[oklch(57.3%_0.137_46.201)] h-40">
-            <div className="absolute -bottom-16 left-8 flex items-end">
-              <div className="h-32 w-32 rounded-full border-4 border-white bg-white shadow-md overflow-hidden">
-                {talent.image_profil ? (
-                  <img
-                    src={talent.image_profil}
-                    alt={talent.nom}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-600 text-3xl font-medium">
-                    {talent.nom.charAt(0).toUpperCase()}
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">Mon Compte Talent</h1>
+          <button
+            onClick={handleLogout}
+            className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
+          >
+            <LogOut className="h-5 w-5 mr-2" />
+            Déconnexion
+          </button>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="w-full md:w-64 flex-shrink-0">
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="p-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <div className="h-16 w-16 rounded-full bg-white ring-4 ring-white/30 flex items-center justify-center overflow-hidden">
+                      {talent.image_profil ? (
+                        <img 
+                          src={talent.image_profil} 
+                          alt={talent.nom} 
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-2xl font-medium text-gray-700">
+                          {talent.nom?.charAt(0)?.toUpperCase() || "T"}
+                        </span>
+                      )}
+                    </div>
+                    {editing && (
+                      <label
+                        htmlFor="image_profil"
+                        className="absolute bottom-0 right-0 bg-white text-blue-600 p-1.5 rounded-full cursor-pointer hover:bg-gray-100 transition-colors"
+                      >
+                        <Camera className="h-4 w-4" />
+                        <input
+                          type="file"
+                          id="image_profil"
+                          name="image_profil"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
                   </div>
-                )}
+                  <div>
+                    <h2 className="font-bold text-lg">{talent.nom}</h2>
+                    <p className="text-sm opacity-90">{talent.email}</p>
+                  </div>
+                </div>
               </div>
-              <div className="ml-6 mb-4">
-                <div className="text-white text-xl font-semibold">{talent.nom}</div>
-                <div className="text-white/80 flex items-center">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white">
-                    {talent.domaine_artiste || "Artiste"}
-                  </span>
+
+              <nav className="p-4">
+                <ul className="space-y-2">
+                  {navItems.map((item) => (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => setActiveTab(item.id)}
+                        className={`w-full flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                          activeTab === item.id
+                            ? 'bg-blue-600 text-white'
+                            : 'hover:bg-gray-100'
+                        }`}
+                      >
+                        <item.icon className="h-5 w-5 mr-3" />
+                        <span>{item.label}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+
+              <div className="p-4 border-t border-gray-200">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Compte {talent.statut_talent === 'actif' ? 'vérifié' : 'non vérifié'}</span>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      talent.statut_talent === 'actif' ? 'bg-green-100 text-green-800' : 
+                      talent.statut_talent === 'inactif' ? 'bg-red-100 text-red-800' : 
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {talent.statut_talent === 'actif' ? 'Actif' : 
+                       talent.statut_talent === 'inactif' ? 'Inactif' : 
+                       'En validation'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Membre depuis</span>
+                    <span className="text-sm font-medium">
+                      {new Date(talent.date_inscription).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Profile content */}
-          <div className="pt-20 px-8 pb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Name field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">{talent.nom}</div>
-              </div>
-
-              {/* Email field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">{talent.email}</div>
-              </div>
-
-              {/* Phone field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-                <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">
-                  {talent.telephone || "Non renseigné"}
-                </div>
-              </div>
-
-              {/* Domain field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Domaine artistique</label>
-                <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">
-                  {talent.domaine_artiste || "Non renseigné"}
-                </div>
-              </div>
-
-              {/* Status field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Statut</label>
-                <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                    ${talent.statut_talent === 'actif' ? 'bg-green-100 text-green-800' : 
-                      talent.statut_talent === 'inactif' ? 'bg-red-100 text-red-800' : 
-                      'bg-yellow-100 text-yellow-800'}`}>
-                    {talent.statut_talent || "Non défini"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Address field - full width */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
-                <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">
-                  {talent.adresse || "Non renseignée"}
-                </div>
-              </div>
-
-              {/* Bio field - full width */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Biographie</label>
-                <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800 whitespace-pre-line">
-                  {talent.bio || "Aucune biographie disponible"}
-                </div>
-              </div>
-            </div>
-
-            {/* Portfolio section */}
-            <div className="mt-10">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Portfolio</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {talent.portfolio && talent.portfolio.length > 0 ? (
-                  talent.portfolio.map((item, index) => (
-                    <div key={index} className="relative rounded-lg overflow-hidden shadow-md h-48">
-                      <img
-                        src={item || "/placeholder.svg"}
-                        alt={`Portfolio ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
+          <div className="flex-1">
+            {activeTab === "profile" && (
+              <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                  <h2 className="text-xl font-bold text-gray-900">Profil Talent</h2>
+                  {!editing ? (
+                    <button
+                      onClick={() => setEditing(true)}
+                      className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200"
+                    >
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Modifier
+                    </button>
+                  ) : (
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => {
+                          setEditing(false);
+                          setFormData({
+                            nom: talent.nom || "",
+                            email: talent.email || "",
+                            telephone: talent.telephone || "",
+                            adresse: talent.adresse || "",
+                            domaine_artiste: talent.domaine_artiste || "",
+                            description_talent: talent.description_talent || "",
+                            specialite: talent.specialite || "",
+                            annees_experience: talent.annees_experience || "",
+                            competences: talent.competences || "",
+                            disponibilites: talent.disponibilites || "",
+                            reseaux_sociaux: talent.reseaux_sociaux || {},
+                            experience: talent.experience || [],
+                            cv: null,
+                            image_profil: null,
+                          });
+                          setImagePreview(null);
+                          setCvPreview(null);
+                        }}
+                        className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        onClick={handleSubmit}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200"
+                      >
+                        Enregistrer
+                      </button>
                     </div>
-                  ))
-                ) : (
-                  <div className="col-span-full text-center p-8 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-gray-500">Aucune image dans le portfolio</p>
-                  </div>
-                )}
-              </div>
-            </div>
+                  )}
+                </div>
 
-            {/* Account info section */}
-            <div className="mt-10">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Informations du compte</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-                    <div className="p-2 rounded-full bg-blue-100 mr-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                <div className="p-6">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nom complet
+                        </label>
+                        {editing ? (
+                          <input
+                            type="text"
+                            name="nom"
+                            value={formData.nom}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                          />
+                        ) : (
+                          <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">
+                            {talent.nom}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email
+                        </label>
+                        {editing ? (
+                          <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                          />
+                        ) : (
+                          <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">
+                            {talent.email}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Téléphone
+                        </label>
+                        {editing ? (
+                          <input
+                            type="tel"
+                            name="telephone"
+                            value={formData.telephone}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">
+                            {talent.telephone || "Non renseigné"}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Domaine artistique
+                        </label>
+                        {editing ? (
+                          <input
+                            type="text"
+                            name="domaine_artiste"
+                            value={formData.domaine_artiste}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">
+                            {talent.domaine_artiste || "Non renseigné"}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Spécialité
+                        </label>
+                        {editing ? (
+                          <input
+                            type="text"
+                            name="specialite"
+                            value={formData.specialite}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">
+                            {talent.specialite || "Non renseigné"}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Années d'expérience
+                        </label>
+                        {editing ? (
+                          <input
+                            type="number"
+                            name="annees_experience"
+                            value={formData.annees_experience}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">
+                            {talent.annees_experience || "Non renseigné"}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Compétences
+                        </label>
+                        {editing ? (
+                          <textarea
+                            name="competences"
+                            value={formData.competences}
+                            onChange={handleChange}
+                            rows="3"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Listez vos compétences, séparées par des virgules"
+                          />
+                        ) : (
+                          <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800 whitespace-pre-line">
+                            {talent.competences || "Aucune compétence renseignée"}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Disponibilités
+                        </label>
+                        {editing ? (
+                          <textarea
+                            name="disponibilites"
+                            value={formData.disponibilites}
+                            onChange={handleChange}
+                            rows="3"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Décrivez vos disponibilités"
+                          />
+                        ) : (
+                          <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800 whitespace-pre-line">
+                            {talent.disponibilites || "Aucune disponibilité renseignée"}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Réseaux sociaux
+                        </label>
+                        {editing ? (
+                          <div className="space-y-3">
+                            {socialMediaPlatforms.map(platform => (
+                              <div key={platform.id} className="flex items-center">
+                                <span className="w-8">{platform.icon}</span>
+                                <input
+                                  type="text"
+                                  value={formData.reseaux_sociaux[platform.id] || ""}
+                                  onChange={(e) => handleSocialMediaChange(platform.id, e.target.value)}
+                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder={`Lien ${platform.name}`}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="px-4 py-3 bg-gray-50 rounded-lg">
+                            {Object.keys(talent.reseaux_sociaux || {}).length > 0 ? (
+                              <div className="flex flex-wrap gap-3">
+                                {socialMediaPlatforms.map(platform => (
+                                  talent.reseaux_sociaux[platform.id] && (
+                                    <a 
+                                      key={platform.id} 
+                                      href={talent.reseaux_sociaux[platform.id]} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="flex items-center px-3 py-1 bg-gray-200 rounded-full hover:bg-gray-300"
+                                    >
+                                      {platform.icon}
+                                      <span className="ml-1 text-sm">{platform.name}</span>
+                                    </a>
+                                  )
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-gray-800">Aucun réseau social renseigné</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Expérience professionnelle
+                        </label>
+                        {editing ? (
+                          <div className="space-y-4">
+                            {formData.experience.map((exp, index) => (
+                              <div key={index} className="p-4 border border-gray-200 rounded-lg">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                                  <div>
+                                    <label className="block text-xs text-gray-500 mb-1">Poste</label>
+                                    <input
+                                      type="text"
+                                      value={exp.poste || ""}
+                                      onChange={(e) => handleExperienceChange(index, 'poste', e.target.value)}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-gray-500 mb-1">Entreprise</label>
+                                    <input
+                                      type="text"
+                                      value={exp.entreprise || ""}
+                                      onChange={(e) => handleExperienceChange(index, 'entreprise', e.target.value)}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-gray-500 mb-1">Durée</label>
+                                    <input
+                                      type="text"
+                                      value={exp.duree || ""}
+                                      onChange={(e) => handleExperienceChange(index, 'duree', e.target.value)}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                      placeholder="Ex: 2018-2020"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="mb-3">
+                                  <label className="block text-xs text-gray-500 mb-1">Description</label>
+                                  <textarea
+                                    value={exp.description || ""}
+                                    onChange={(e) => handleExperienceChange(index, 'description', e.target.value)}
+                                    rows="2"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeExperience(index)}
+                                  className="text-red-500 text-sm hover:text-red-700"
+                                >
+                                  Supprimer
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={addExperience}
+                              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
+                            >
+                              + Ajouter une expérience
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {(talent.experience || []).length > 0 ? (
+                              talent.experience.map((exp, index) => (
+                                <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                                  <h4 className="font-medium">{exp.poste}</h4>
+                                  <p className="text-gray-600">{exp.entreprise} • {exp.duree}</p>
+                                  {exp.description && (
+                                    <p className="mt-1 text-gray-700 whitespace-pre-line">{exp.description}</p>
+                                  )}
+                                </div>
+                              ))
+                            ) : (
+                              <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">Aucune expérience renseignée</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          CV
+                        </label>
+                        {editing ? (
+                          <div>
+                            <input
+                              type="file"
+                              id="cv"
+                              name="cv"
+                              accept=".pdf,.doc,.docx"
+                              onChange={handleCvChange}
+                              className="hidden"
+                            />
+                            <label
+                              htmlFor="cv"
+                              className="inline-block px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                            >
+                              Choisir un fichier
+                            </label>
+                            {formData.cv?.name && (
+                              <span className="ml-3 text-sm text-gray-700">{formData.cv.name}</span>
+                            )}
+                          </div>
+                        ) : talent.cv ? (
+                          <a
+                            href={talent.cv}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Télécharger le CV
+                          </a>
+                        ) : (
+                          <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">Aucun CV téléchargé</p>
+                        )}
+                      </div>
                     </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "security" && (
+              <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-xl font-bold text-gray-900">Sécurité du compte</h2>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-6">
                     <div>
-                      <p className="text-sm text-gray-500">Date d'inscription</p>
-                      <p className="font-medium">
-                        {talent.date_creation ? new Date(talent.date_creation).toLocaleDateString() : "Non disponible"}
-                      </p>
+                      <h3 className="text-lg font-medium mb-2">Changer le mot de passe</h3>
+                      {showPasswordForm ? (
+                        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Mot de passe actuel
+                              </label>
+                              <input
+                                type="password"
+                                name="currentPassword"
+                                value={passwordData.currentPassword}
+                                onChange={handlePasswordChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Nouveau mot de passe
+                              </label>
+                              <input
+                                type="password"
+                                name="newPassword"
+                                value={passwordData.newPassword}
+                                onChange={handlePasswordChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Confirmer le nouveau mot de passe
+                              </label>
+                              <input
+                                type="password"
+                                name="confirmPassword"
+                                value={passwordData.confirmPassword}
+                                onChange={handlePasswordChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end space-x-3">
+                            <button
+                              type="button"
+                              onClick={() => setShowPasswordForm(false)}
+                              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                            >
+                              Annuler
+                            </button>
+                            <button
+                              type="submit"
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            >
+                              Enregistrer
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <button
+                          onClick={() => setShowPasswordForm(true)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          <Key className="h-4 w-4 inline-block mr-2" />
+                          Changer le mot de passe
+                        </button>
+                      )}
                     </div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-                    <div className="p-2 rounded-full bg-green-100 mr-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Statut du compte</p>
-                      <p className="font-medium">
-                        {talent.actif ? "Actif" : "Inactif"}
-                      </p>
+
+                    <div className="border-t border-gray-200 pt-6">
+                      <h3 className="text-lg font-medium mb-2">Sécurité avancée</h3>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium">
+                              <Shield className="h-4 w-4 inline-block mr-2" />
+                              Authentification à deux facteurs
+                            </h4>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Ajoutez une couche de sécurité supplémentaire à votre compte
+                            </p>
+                          </div>
+                          <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                            Activer
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
-      </div>
+      </main>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
