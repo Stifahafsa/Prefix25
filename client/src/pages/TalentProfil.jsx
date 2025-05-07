@@ -44,8 +44,8 @@ export default function TalentProfile() {
   useEffect(() => {
     const fetchTalentData = async () => {
       try {
-        const response = await api.get(`/utilisateurs?email=${userEmail}`);
-        const user = response.data.find(u => u.is_talent);
+        const response = await api.get(`/talent?email=${userEmail}`);
+        const user = response.data;
         
         if (!user) throw new Error("Talent non trouvé");
 
@@ -76,25 +76,14 @@ export default function TalentProfile() {
     fetchTalentData();
   }, [userEmail]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+
 
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
     setPasswordData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, image_profil: file }));
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
+
 
   const handleCvChange = (e) => {
     const file = e.target.files[0];
@@ -119,12 +108,7 @@ export default function TalentProfile() {
     setFormData(prev => ({ ...prev, experience: newExperience }));
   };
 
-  const addExperience = () => {
-    setFormData(prev => ({
-      ...prev,
-      experience: [...prev.experience, { poste: "", entreprise: "", duree: "", description: "" }]
-    }));
-  };
+  
 
   const removeExperience = (index) => {
     setFormData(prev => ({
@@ -136,36 +120,56 @@ export default function TalentProfile() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+  
     try {
       const formDataToSend = new FormData();
-      
-      // Append all form data
+      const token = Cookies.get('token');
+  
+      // Ajoutez tous les champs au FormData
       Object.keys(formData).forEach(key => {
-        if (formData[key] !== null && key !== 'image_profil' && key !== 'cv') {
-          if (key === 'reseaux_sociaux' || key === 'experience') {
-            formDataToSend.append(key, JSON.stringify(formData[key]));
-          } else {
+        if (key === 'reseaux_sociaux' || key === 'experience') {
+          // Sérialisez les objets JSON
+          formDataToSend.append(key, JSON.stringify(formData[key]));
+        } else if (key === 'image_profil' || key === 'cv') {
+          // Ajoutez les fichiers seulement s'ils sont nouveaux
+          if (formData[key] instanceof File) {
+            formDataToSend.append(key, formData[key]);
+          }
+        } else {
+          // Ajoutez les autres champs
+          if (formData[key] !== null && formData[key] !== undefined) {
             formDataToSend.append(key, formData[key]);
           }
         }
       });
+      // Validation côté client pour le téléphone
+    if (formData.telephone && !/^[0-9+\s-]{8,20}$/.test(formData.telephone)) {
+      throw new Error("Format de téléphone invalide");
+    }
 
-      // Append files if they exist
-      if (formData.image_profil instanceof File) {
-        formDataToSend.append('image_profil', formData.image_profil);
+  
+      // Debug: Affichez le contenu de FormData
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(key, value);
       }
-      if (formData.cv instanceof File) {
-        formDataToSend.append('cv', formData.cv);
-      }
-
-      const response = await talentService.updateProfile(formDataToSend);
-      
+  
+      const response = await api.put(`/talent/${talent.id}`, formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+  
       setToast({ message: "Profil mis à jour avec succès!", type: "success" });
       setEditing(false);
-      setTalent(response.talent);
+      setTalent(response.data);
+  
     } catch (error) {
-      setToast({ message: error.message || "Erreur lors de la mise à jour", type: "error" });
+      console.error("Erreur détaillée:", error);
+      setToast({
+        message: error.response?.data?.message || error.message || "Erreur lors de la mise à jour",
+        type: "error"
+      });
     } finally {
       setLoading(false);
     }
@@ -180,17 +184,17 @@ export default function TalentProfile() {
 
     setLoading(true);
     try {
-      await talentService.updatePassword(
-        passwordData.currentPassword,
-        passwordData.newPassword
-      );
+      await api.put(`/talent/${talent.id}/password`, {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
 
       setToast({ message: "Mot de passe mis à jour!", type: "success" });
       setShowPasswordForm(false);
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (error) {
       setToast({
-        message: error.message || "Erreur lors de la mise à jour",
+        message: error.response?.data?.message || "Erreur lors de la mise à jour",
         type: "error",
       });
     } finally {
@@ -198,6 +202,48 @@ export default function TalentProfile() {
     }
   };
 
+  // Dans votre composant TalentProfile
+const handleImageChange = (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    setFormData(prev => ({ ...prev, image_profil: file }));
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
+  }
+};
+
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  setFormData(prev => ({ ...prev, [name]: value }));
+};
+
+const addExperience = () => {
+  setFormData(prev => ({
+    ...prev,
+    experience: [...prev.experience, { 
+      poste: "", 
+      entreprise: "", 
+      duree: "", 
+      description: "" 
+    }]
+  }));
+};
+// Dans votre composant de login
+const handleLogin = async () => {
+  try {
+    const response = await api.post('/auth/login', { email, password });
+    const { token, is_talent } = response.data;
+    
+    if (is_talent) {
+      navigate('/TalentProfil');
+    } else {
+      navigate('/UserProfil');
+    }
+  } catch (error) {
+    setError("Identifiants incorrects");
+  }
+};
   const handleLogout = () => {
     Cookies.remove("userEmail");
     Cookies.remove("authToken");
@@ -220,7 +266,7 @@ export default function TalentProfile() {
           <p className="mb-6">Aucun profil talent trouvé.</p>
           <button
             onClick={() => navigate("/")}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg hover:bg-[oklch(52.3%_0.137_46.201)] transition-colors"
           >
             Retour à l'accueil
           </button>
@@ -260,7 +306,7 @@ export default function TalentProfile() {
         <div className="flex flex-col md:flex-row gap-6">
           <div className="w-full md:w-64 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="p-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+            <div className="p-6 bg-gradient-to-r from-[oklch(47.3%_0.137_46.201)] to-[oklch(57.3%_0.137_46.201)] text-white">
                 <div className="flex items-center space-x-4">
                   <div className="relative">
                     <div className="h-16 w-16 rounded-full bg-white ring-4 ring-white/30 flex items-center justify-center overflow-hidden">
@@ -308,8 +354,8 @@ export default function TalentProfile() {
                         onClick={() => setActiveTab(item.id)}
                         className={`w-full flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 ${
                           activeTab === item.id
-                            ? 'bg-blue-600 text-white'
-                            : 'hover:bg-gray-100'
+                            ? 'bg-[oklch(47.3%_0.137_46.201)] text-white'
+                            : 'hover:bg-[oklch(52.3%_0.137_46.201)]'
                         }`}
                       >
                         <item.icon className="h-5 w-5 mr-3" />
@@ -353,7 +399,7 @@ export default function TalentProfile() {
                   {!editing ? (
                     <button
                       onClick={() => setEditing(true)}
-                      className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200"
+                      className="flex items-center px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg hover:bg-[oklch(52.3%_0.137_46.201)] transition-all duration-200"
                     >
                       <Edit2 className="h-4 w-4 mr-2" />
                       Modifier
@@ -388,7 +434,7 @@ export default function TalentProfile() {
                       </button>
                       <button
                         onClick={handleSubmit}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200"
+                        className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg hover:bg-[oklch(52.3%_0.137_46.201)] transition-all duration-200"
                       >
                         Enregistrer
                       </button>
@@ -445,12 +491,14 @@ export default function TalentProfile() {
                         </label>
                         {editing ? (
                           <input
-                            type="tel"
-                            name="telephone"
-                            value={formData.telephone}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
+                          type="tel"
+                          name="telephone"
+                          value={formData.telephone}
+                          onChange={handleChange}
+                          pattern="[0-9+\s-]{8,20}"
+                          title="Format : 0123456789 ou +33 1 23 45 67 89"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
                         ) : (
                           <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-800">
                             {talent.telephone || "Non renseigné"}
@@ -712,7 +760,7 @@ export default function TalentProfile() {
                             href={talent.cv}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                            className="inline-flex items-center px-4 py-2 bg-[oklch(45.9%_0.137_46.201)] text-blue-700 rounded-lg hover:bg-[oklch(52.3%_0.137_46.201)]"
                           >
                             <FileText className="h-4 w-4 mr-2" />
                             Télécharger le CV
@@ -789,7 +837,7 @@ export default function TalentProfile() {
                             </button>
                             <button
                               type="submit"
-                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                              className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg hover:bg-[oklch(52.3%_0.137_46.201)]"
                             >
                               Enregistrer
                             </button>
@@ -798,7 +846,7 @@ export default function TalentProfile() {
                       ) : (
                         <button
                           onClick={() => setShowPasswordForm(true)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          className="px-4 py-2 bg-[oklch(47.3%_0.137_46.201)] text-white rounded-lg hover:bg-[oklch(52.3%_0.137_46.201)]"
                         >
                           <Key className="h-4 w-4 inline-block mr-2" />
                           Changer le mot de passe

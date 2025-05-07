@@ -9,6 +9,10 @@ import utilisateurRoutes from "./routes/utilisateurRoutes.js";
 import sequelize from "./config/database.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import notificationRoutes from './routes/notificationRoutes.js';
+import bodyParser from 'body-parser';
+import fileUpload from 'express-fileupload';
+import {talentRoutes} from './routes/talentRoutes.js';
+
 const PORT = 3000;
 const app = express();
 // dotenv.config()
@@ -22,6 +26,9 @@ app.use(
 );
 
 app.use(express.json());
+app.use(bodyParser.json());
+app.use(fileUpload());
+
 app.use("/api/auth", authRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/evenements", evenementRoutes); // Use evenement routes
@@ -30,6 +37,9 @@ app.use("/api/espaces", espaceRoutes); // Use espace routes
 app.use("/api/utilisateurs", utilisateurRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/notification", notificationRoutes);// Test de connexion à la base de données
+app.use("/api/talent", talentRoutes);
+
+
 sequelize
   .authenticate()
   .then(() => {

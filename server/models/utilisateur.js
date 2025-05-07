@@ -53,13 +53,53 @@ const Utilisateur = sequelize.define(
       type: DataTypes.ENUM("actif", "inactif", "en_validation"),
       defaultValue: "en_validation",
     },
-    // Dans le modèle Utilisateur
     resetPasswordToken: {
       type: DataTypes.STRING,
       allowNull: true,
     },
     resetPasswordExpires: {
       type: DataTypes.DATE,
+      allowNull: true,
+    },
+    specialite: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    annees_experience: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    competences: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    disponibilites: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    reseaux_sociaux: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: {},
+    },
+    experience: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: [],
+    },
+    cv: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    telephone: {
+      type: DataTypes.STRING(20), // Spécifiez la longueur maximale
+      allowNull: true,
+      validate: {
+        is: /^[0-9+\s-]*$/i // Validation simple pour numéros de téléphone
+      }
+    },
+    adresse: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
   },

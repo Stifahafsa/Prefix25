@@ -1,296 +1,148 @@
-// import User from '../models/Talent.js';
-// import fs from 'fs';
-// import path from 'path';
-// import { fileURLToPath } from 'url';
-// import multer from 'multer';
+/// backend/controllers/talentController.js
+import sequelize from "../config/database.js";
+import Utilisateur from "../models/utilisateur.js";
+import bcrypt from "bcrypt";
+import fs from "fs";
 
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
+export const getTalentByEmail = async (req, res) => {
+  try {
+    console.log('Query params:', req.query); // Debug
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ 
+        message: "Le paramètre email est requis dans l'URL : /api/talent?email=example@mail.com" 
+      });
+    }
 
-// // Configuration de multer pour le stockage des fichiers
-// const storage = multer.diskStorage({
-//   destination: function(req, file, cb) {
-//     const uploadDir = path.join(__dirname, '../public/uploads');
+    const talent = await Utilisateur.findOne({ 
+      where: { 
+        email: email,
+        is_talent: true 
+      }
+    });
     
-//     // Créer le répertoire s'il n'existe pas
-//     if (!fs.existsSync(uploadDir)) {
-//       fs.mkdirSync(uploadDir, { recursive: true });
-//     }
+    if (!talent) {
+      return res.status(404).json({ 
+        message: `Aucun talent trouvé avec l'email ${email}` 
+      });
+    }
     
-//     cb(null, uploadDir);
-//   },
-//   filename: function(req, file, cb) {
-//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-//     const ext = path.extname(file.originalname);
-//     cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-//   }
-// });
+    res.json(talent);
+  } catch (error) {
+    console.error('Error fetching talent:', error);
+    res.status(500).json({ 
+      message: "Erreur serveur lors de la récupération du talent",
+      error: error.message 
+    });
+  }
+};
 
-// // Filtre pour les types de fichiers acceptés
-// const fileFilter = (req, file, cb) => {
-//   if (file.fieldname === 'image_profil') {
-//     if (file.mimetype.startsWith('image/')) {
-//       cb(null, true);
-//     } else {
-//       cb(new Error('Le fichier doit être une image'), false);
-//     }
-//   } else if (file.fieldname === 'cv') {
-//     if (
-//       file.mimetype === 'application/pdf' ||
-//       file.mimetype === 'application/msword' ||
-//       file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-//     ) {
-//       cb(null, true);
-//     } else {
-//       cb(new Error('Le fichier CV doit être au format PDF ou DOC/DOCX'), false);
-//     }
-//   } else {
-//     cb(null, true);
-//   }
-// };
+export const updateTalent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let updates = { ...req.body };
 
-// export const upload = multer({ 
-//   storage: storage,
-//   fileFilter: fileFilter,
-//   limits: {
-//     fileSize: 5 * 1024 * 1024 // 5MB max
-//   }
-// });
+    // AJOUTEZ ICI LES CONSOLE.LOG POUR DEBUG
+    console.log('Données reçues:', {
+      id,
+      updates,
+      files: req.files
+    });
 
+    // Validation spécifique pour le téléphone
+    if (updates.telephone && !/^[0-9+\s-]{8,20}$/.test(updates.telephone)) {
+      console.log('Validation téléphone échouée:', updates.telephone); // Ajouté
+      return res.status(400).json({
+        success: false,
+        message: "Format de téléphone invalide"
+      });
+    }
 
-// // Obtenir le profil du talent
-// export const getTalentProfile = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     console.log("Recherche du profil talent pour l'utilisateur ID:", userId);
-    
-//     const user = await User.findByPk(userId);
-    
-//     if (!user) {
-//       console.log("Utilisateur non trouvé avec l'ID:", userId);
-//       return res.status(404).json({ message: 'Utilisateur non trouvé' });
-//     }
-    
-//     // Vérifier si l'utilisateur est un talent
-//     if (!user.is_talent) {
-//       console.log("L'utilisateur n'est pas un talent:", userId);
-//       return res.status(403).json({ 
-//         message: 'Cet utilisateur n\'est pas enregistré comme talent',
-//         user: {
-//           id: user.id,
-//           nom: user.nom,
-//           email: user.email,
-//           is_talent: user.is_talent
-//         }
-//       });
-//     }
-    
-//     // Masquer le mot de passe dans la réponse
-//     const userResponse = user.toJSON();
-//     delete userResponse.password;
-    
-//     console.log("Profil talent trouvé et renvoyé avec succès");
-//     res.status(200).json(userResponse);
-//   } catch (error) {
-//     console.error('Erreur lors de la récupération du profil:', error);
-//     res.status(500).json({ 
-//       message: 'Erreur serveur lors de la récupération du profil',
-//       error: error.message 
-//     });
-//   }
-// };
+    // Gestion des fichiers
+    if (req.files?.image_profil) {
+      updates.image_profil = `/uploads/${req.files.image_profil[0].filename}`;
+    }
+    if (req.files?.cv) {
+      updates.cv = `/uploads/${req.files.cv[0].filename}`;
+    }
 
-// // Mettre à jour le profil du talent
-// export const updateTalentProfile = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-    
-//     // Vérifier si l'utilisateur existe
-//     const user = await User.findByPk(userId);
-//     if (!user) {
-//       return res.status(404).json({ message: 'Utilisateur non trouvé' });
-//     }
-    
-//     // Préparer les données à mettre à jour
-//     const updateData = {
-//       nom: req.body.nom,
-//       email: req.body.email,
-//       telephone: req.body.telephone,
-//       adresse: req.body.adresse,
-//       domaine_artiste: req.body.domaine_artiste,
-//       description_talent: req.body.description_talent,
-//       specialite: req.body.specialite,
-//       annees_experience: req.body.annees_experience,
-//       competences: req.body.competences,
-//       disponibilites: req.body.disponibilites
-//     };
-    
-//     // Traiter les réseaux sociaux (JSON)
-//     if (req.body.reseaux_sociaux) {
-//       try {
-//         updateData.reseaux_sociaux = typeof req.body.reseaux_sociaux === 'string' 
-//           ? JSON.parse(req.body.reseaux_sociaux) 
-//           : req.body.reseaux_sociaux;
-//       } catch (e) {
-//         console.error('Erreur lors du parsing des réseaux sociaux:', e);
-//       }
-//     }
-    
-//     // Traiter l'expérience (JSON)
-//     if (req.body.experience) {
-//       try {
-//         updateData.experience = typeof req.body.experience === 'string' 
-//           ? JSON.parse(req.body.experience) 
-//           : req.body.experience;
-//       } catch (e) {
-//         console.error('Erreur lors du parsing de l\'expérience:', e);
-//       }
-//     }
-    
-//     // Traiter les fichiers uploadés
-//     if (req.files) {
-//       // Traiter l'image de profil
-//       if (req.files.image_profil && req.files.image_profil[0]) {
-//         // Supprimer l'ancienne image si elle existe
-//         if (user.image_profil) {
-//           const oldImagePath = path.join(__dirname, '../public', user.image_profil);
-//           if (fs.existsSync(oldImagePath)) {
-//             fs.unlinkSync(oldImagePath);
-//           }
-//         }
-        
-//         // Enregistrer le chemin de la nouvelle image
-//         updateData.image_profil = '/uploads/' + req.files.image_profil[0].filename;
-//       }
-      
-//       // Traiter le CV
-//       if (req.files.cv && req.files.cv[0]) {
-//         // Supprimer l'ancien CV s'il existe
-//         if (user.cv) {
-//           const oldCvPath = path.join(__dirname, '../public', user.cv);
-//           if (fs.existsSync(oldCvPath)) {
-//             fs.unlinkSync(oldCvPath);
-//           }
-//         }
-        
-//         // Enregistrer le chemin du nouveau CV
-//         updateData.cv = '/uploads/' + req.files.cv[0].filename;
-//       }
-//     }
-    
-//     // Mettre à jour l'utilisateur
-//     await user.update(updateData);
-    
-//     // Récupérer l'utilisateur mis à jour
-//     const updatedUser = await User.findByPk(userId);
-//     const userResponse = updatedUser.toJSON();
-//     delete userResponse.password;
-    
-//     res.status(200).json({ 
-//       message: 'Profil mis à jour avec succès', 
-//       talent: userResponse 
-//     });
-//   } catch (error) {
-//     console.error('Erreur lors de la mise à jour du profil:', error);
-//     res.status(500).json({ message: 'Erreur serveur lors de la mise à jour du profil' });
-//   }
-// };
+    // Conversion des champs JSON
+    if (updates.reseaux_sociaux && typeof updates.reseaux_sociaux === 'string') {
+      updates.reseaux_sociaux = JSON.parse(updates.reseaux_sociaux);
+    }
+    if (updates.experience && typeof updates.experience === 'string') {
+      updates.experience = JSON.parse(updates.experience);
+    }
 
-// // Mettre à jour le mot de passe
-// export const updatePassword = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     const { currentPassword, newPassword } = req.body;
-    
-//     // Vérifier si l'utilisateur existe
-//     const user = await User.findByPk(userId);
-//     if (!user) {
-//       return res.status(404).json({ message: 'Utilisateur non trouvé' });
-//     }
-    
-//     // Vérifier si le mot de passe actuel est correct
-//     const isPasswordValid = await user.checkPassword(currentPassword);
-//     if (!isPasswordValid) {
-//       return res.status(401).json({ message: 'Mot de passe actuel incorrect' });
-//     }
-    
-//     // Mettre à jour le mot de passe
-//     await user.update({ password: newPassword });
-    
-//     res.status(200).json({ message: 'Mot de passe mis à jour avec succès' });
-//   } catch (error) {
-//     console.error('Erreur lors de la mise à jour du mot de passe:', error);
-//     res.status(500).json({ message: 'Erreur serveur lors de la mise à jour du mot de passe' });
-//   }
-// };
+    // AJOUTEZ ICI AUSSI POUR VOIR LES DONNÉES AVANT MISE À JOUR
+    console.log('Données avant mise à jour:', updates);
 
-// // Service pour les opérations liées au talent
-// export const talentService = {
-//   // Récupérer le profil du talent
-//   getProfile: async (userId) => {
-//     try {
-//       const user = await User.findByPk(userId);
-//       if (!user) throw new Error('Utilisateur non trouvé');
-      
-//       const userResponse = user.toJSON();
-//       delete userResponse.password;
-      
-//       return userResponse;
-//     } catch (error) {
-//       throw error;
-//     }
-//   },
-  
-//   // Mettre à jour le profil du talent
-//   updateProfile: async (userId, updateData, files = null) => {
-//     try {
-//       const user = await User.findByPk(userId);
-//       if (!user) throw new Error('Utilisateur non trouvé');
-      
-//       // Traiter les fichiers si présents
-//       if (files) {
-//         if (files.image_profil) {
-//           updateData.image_profil = '/uploads/' + files.image_profil[0].filename;
-//         }
-//         if (files.cv) {
-//           updateData.cv = '/uploads/' + files.cv[0].filename;
-//         }
-//       }
-      
-//       await user.update(updateData);
-      
-//       const updatedUser = await User.findByPk(userId);
-//       const userResponse = updatedUser.toJSON();
-//       delete userResponse.password;
-      
-//       return { message: 'Profil mis à jour avec succès', talent: userResponse };
-//     } catch (error) {
-//       throw error;
-//     }
-//   },
-  
-//   // Mettre à jour le mot de passe
-//   updatePassword: async (userId, currentPassword, newPassword) => {
-//     try {
-//       const user = await User.findByPk(userId);
-//       if (!user) throw new Error('Utilisateur non trouvé');
-      
-//       const isPasswordValid = await user.checkPassword(currentPassword);
-//       if (!isPasswordValid) throw new Error('Mot de passe actuel incorrect');
-      
-//       await user.update({ password: newPassword });
-      
-//       return { message: 'Mot de passe mis à jour avec succès' };
-//     } catch (error) {
-//       throw error;
-//     }
-//   }
-// };
+    const [updated] = await Utilisateur.update(updates, { 
+      where: { id } 
+    });
+    console.log('Résultat de la mise à jour:', updated); // Ajouté
 
-// export default {
-//   getTalentProfile,
-//   updateTalentProfile,
-//   updatePassword,
-//   upload,
-//   talentService
-// };
+    if (!updated) {
+      return res.status(404).json({ 
+        success: false,
+        message: "Talent non trouvé" 
+      });
+    }
+
+    const updatedTalent = await Utilisateur.findByPk(id);
+    res.json({
+      success: true,
+      message: 'Profil mis à jour avec succès',
+      talent: updatedTalent
+    });
+
+  } catch (error) {
+    console.error('Error in updateTalent:', error);
+    // AJOUTEZ LE DÉTAIL DE L'ERREUR
+    console.error('Détails erreur:', {
+      message: error.message,
+      stack: error.stack,
+      ...error
+    });
+    
+    // Nettoyage des fichiers en cas d'erreur
+    if (req.files?.image_profil) {
+      fs.unlinkSync(req.files.image_profil[0].path);
+    }
+    if (req.files?.cv) {
+      fs.unlinkSync(req.files.cv[0].path);
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la mise à jour du profil'
+    });
+  }
+};
+
+export const updatePassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    const talent = await Utilisateur.findByPk(id);
+    if (!talent) {
+      return res.status(404).json({ message: "Talent non trouvé" });
+    }
+
+    // Vérifier le mot de passe actuel
+    const isMatch = await bcrypt.compare(currentPassword, talent.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Mot de passe actuel incorrect" });
+    }
+
+    // Mettre à jour le mot de passe
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await talent.update({ password: hashedPassword });
+
+    res.json({ message: "Mot de passe mis à jour avec succès" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
