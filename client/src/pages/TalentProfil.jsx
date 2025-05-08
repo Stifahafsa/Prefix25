@@ -125,40 +125,43 @@ export default function TalentProfile() {
       const formDataToSend = new FormData();
       const token = Cookies.get('token');
   
-      // Ajoutez tous les champs au FormData
-      Object.keys(formData).forEach(key => {
-        if (key === 'reseaux_sociaux' || key === 'experience') {
-          // Sérialisez les objets JSON
-          formDataToSend.append(key, JSON.stringify(formData[key]));
-        } else if (key === 'image_profil' || key === 'cv') {
-          // Ajoutez les fichiers seulement s'ils sont nouveaux
-          if (formData[key] instanceof File) {
-            formDataToSend.append(key, formData[key]);
-          }
-        } else {
-          // Ajoutez les autres champs
-          if (formData[key] !== null && formData[key] !== undefined) {
-            formDataToSend.append(key, formData[key]);
-          }
-        }
-      });
-      // Validation côté client pour le téléphone
-    if (formData.telephone && !/^[0-9+\s-]{8,20}$/.test(formData.telephone)) {
-      throw new Error("Format de téléphone invalide");
-    }
+      // Ajoutez chaque champ un par un
+    formDataToSend.append('nom', formData.nom);
+    formDataToSend.append('email', formData.email);
+    formDataToSend.append('telephone', formData.telephone);
+    formDataToSend.append('domaine_artiste', formData.domaine_artiste);
+    formDataToSend.append('description_talent', formData.description_talent);
+    formDataToSend.append('specialite', formData.specialite);
+    formDataToSend.append('annees_experience', formData.annees_experience);
+    formDataToSend.append('competences', formData.competences);
+    formDataToSend.append('disponibilites', formData.disponibilites);
+    
 
-  
-      // Debug: Affichez le contenu de FormData
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(key, value);
+    // Pour les objets JSON
+    formDataToSend.append('reseaux_sociaux', JSON.stringify(formData.reseaux_sociaux));
+    formDataToSend.append('experience', JSON.stringify(formData.experience));
+    
+    // Pour les fichiers (si existants)
+    if (formData.image_profil instanceof File) {
+      formDataToSend.append('image_profil', formData.image_profil);
+    }
+    if (formData.cv instanceof File) {
+      formDataToSend.append('cv', formData.cv);
+    }
+    
+    // Debug: Affichez le contenu de FormData
+    for (let pair of formDataToSend.entries()) {
+      console.log(pair[0], pair[1]);
+    }
+    
+
+    console.log("Envoi des données:", formDataToSend); 
+    const response = await api.put(`/talent/${talent.id}`, formDataToSend, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
       }
-  
-      const response = await api.put(`/talent/${talent.id}`, formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+    });
   
       setToast({ message: "Profil mis à jour avec succès!", type: "success" });
       setEditing(false);
@@ -184,6 +187,7 @@ export default function TalentProfile() {
 
     setLoading(true);
     try {
+      console.log("ID du talent pour changement de mot de passe:", talent.id);
       await api.put(`/talent/${talent.id}/password`, {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword

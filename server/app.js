@@ -10,7 +10,6 @@ import sequelize from "./config/database.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import notificationRoutes from './routes/notificationRoutes.js';
 import bodyParser from 'body-parser';
-import fileUpload from 'express-fileupload';
 import {talentRoutes} from './routes/talentRoutes.js';
 
 const PORT = 3000;
@@ -27,7 +26,8 @@ app.use(
 
 app.use(express.json());
 app.use(bodyParser.json());
-app.use(fileUpload());
+app.use(bodyParser.urlencoded({ extended: true }));
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api/reservations", reservationRoutes);

@@ -40,109 +40,108 @@ export const getTalentByEmail = async (req, res) => {
 
 export const updateTalent = async (req, res) => {
   try {
+    console.log('Corps de la requête:', req.body);
+    console.log('Fichiers reçus:', req.files);
+
     const { id } = req.params;
     let updates = { ...req.body };
 
-    // AJOUTEZ ICI LES CONSOLE.LOG POUR DEBUG
-    console.log('Données reçues:', {
-      id,
-      updates,
-      files: req.files
-    });
-
-    // Validation spécifique pour le téléphone
-    if (updates.telephone && !/^[0-9+\s-]{8,20}$/.test(updates.telephone)) {
-      console.log('Validation téléphone échouée:', updates.telephone); // Ajouté
-      return res.status(400).json({
-        success: false,
-        message: "Format de téléphone invalide"
-      });
+    // Convertir les champs JSON si ce sont des chaînes
+    if (typeof updates.reseaux_sociaux === 'string') {
+      try {
+        updates.reseaux_sociaux = JSON.parse(updates.reseaux_sociaux);
+      } catch {
+        updates.reseaux_sociaux = {};
+      }
     }
 
-    // Gestion des fichiers
+    if (typeof updates.experience === 'string') {
+      try {
+        updates.experience = JSON.parse(updates.experience);
+      } catch {
+        updates.experience = [];
+      }
+    }
+
+    // Convertir les champs numériques
+    updates.annees_experience = updates.annees_experience === '' ? null : parseInt(updates.annees_experience);
+
+    // Nettoyer les champs vides sauf ceux qui acceptent des chaînes vides explicitement
+    for (const key in updates) {
+      if (updates[key] === '') {
+        updates[key] = null;
+      }
+    }
+
+    // Gestion des fichiers envoyés
     if (req.files?.image_profil) {
       updates.image_profil = `/uploads/${req.files.image_profil[0].filename}`;
     }
+
     if (req.files?.cv) {
       updates.cv = `/uploads/${req.files.cv[0].filename}`;
     }
 
-    // Conversion des champs JSON
-    if (updates.reseaux_sociaux && typeof updates.reseaux_sociaux === 'string') {
-      updates.reseaux_sociaux = JSON.parse(updates.reseaux_sociaux);
-    }
-    if (updates.experience && typeof updates.experience === 'string') {
-      updates.experience = JSON.parse(updates.experience);
-    }
-
-    // AJOUTEZ ICI AUSSI POUR VOIR LES DONNÉES AVANT MISE À JOUR
-    console.log('Données avant mise à jour:', updates);
-
-    const [updated] = await Utilisateur.update(updates, { 
-      where: { id } 
-    });
-    console.log('Résultat de la mise à jour:', updated); // Ajouté
+    // Mise à jour dans la base de données
+    const [updated] = await Utilisateur.update(updates, { where: { id } });
 
     if (!updated) {
-      return res.status(404).json({ 
-        success: false,
-        message: "Talent non trouvé" 
-      });
+      return res.status(404).json({ message: "Talent non trouvé" });
     }
 
     const updatedTalent = await Utilisateur.findByPk(id);
-    res.json({
-      success: true,
-      message: 'Profil mis à jour avec succès',
-      talent: updatedTalent
-    });
+    res.json(updatedTalent);
 
   } catch (error) {
-    console.error('Error in updateTalent:', error);
-    // AJOUTEZ LE DÉTAIL DE L'ERREUR
-    console.error('Détails erreur:', {
-      message: error.message,
-      stack: error.stack,
-      ...error
-    });
-    
-    // Nettoyage des fichiers en cas d'erreur
-    if (req.files?.image_profil) {
-      fs.unlinkSync(req.files.image_profil[0].path);
-    }
-    if (req.files?.cv) {
-      fs.unlinkSync(req.files.cv[0].path);
-    }
-
+    console.error('Erreur dans updateTalent:', error);
     res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la mise à jour du profil'
+      message: 'Erreur serveur',
+      error: error.message
     });
   }
 };
+
 
 export const updatePassword = async (req, res) => {
   try {
     const { id } = req.params;
     const { currentPassword, newPassword } = req.body;
 
+    // Vérifier que les deux champs sont fournis
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Les champs 'currentPassword' et 'newPassword' sont requis" });
+    }
+
     const talent = await Utilisateur.findByPk(id);
+    console.log("Utilisateur récupéré :", talent?.email);
+
     if (!talent) {
       return res.status(404).json({ message: "Talent non trouvé" });
     }
+    console.log("Mot de passe stocké:", talent.password);
+    console.log("Mot de passe entré:", currentPassword);
+    console.log("Email du talent trouvé :", talent.email);
 
-    // Vérifier le mot de passe actuel
-    const isMatch = await bcrypt.compare(currentPassword, talent.password);
+    // Corriger le préfixe $2y$ → $2b$ si nécessaire
+    let storedPassword = talent.password;
+    if (storedPassword.startsWith("$2y$")) {
+      storedPassword = storedPassword.replace("$2y$", "$2b$");
+    }
+    // Comparer les mots de passe
+    const isMatch = await bcrypt.compare(currentPassword, storedPassword);
     if (!isMatch) {
       return res.status(400).json({ message: "Mot de passe actuel incorrect" });
     }
+    console.log("Comparaison avec bcrypt :", currentPassword, "vs", storedPassword);
 
-    // Mettre à jour le mot de passe
+
+    // Hacher le nouveau mot de passe
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await talent.update({ password: hashedPassword });
 
     res.json({ message: "Mot de passe mis à jour avec succès" });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Erreur dans updatePassword:", error);
+    res.status(500).json({ message: error.message });
   }
 };
