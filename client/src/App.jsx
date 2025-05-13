@@ -21,11 +21,13 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import UserProfil from "./pages/UserProfil";
 import TalentProfil from "./pages/TalentProfil";
+import TalentPage from "./pages/TalentPage";
 
 function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/talentPage" element={<TalentPage/>}/>
         {/* Public routes */}
         <Route path="/login" element={<AuthForms />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
